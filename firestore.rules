@@ -24,6 +24,12 @@ service cloud.firestore {
       allow read: if aprovado();
       allow write: if papel(['piloto', 'moderador']);
     }
+    // Auditor: realiza checklists (avaliações, pendências, briefings, fotos e assinaturas).
+    // Não altera o modelo do checklist nem o cadastro de lojas (config e modelos ficam com piloto e moderador).
+    match /modulos/checklists/{colecao}/{resto=**} {
+      allow write: if papel(['auditor']) && colecao in ['avaliacoes', 'pendencias', 'briefings', '_blobs'];
+    }
+
     // Bases grandes que antes vinham embutidas no HTML (cadastro de produtos e bases iniciais).
     // Piloto grava porque o Cadastro de Itens atualiza a base usada por todos os módulos.
     match /embutidos/{resto=**} {

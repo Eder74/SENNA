@@ -12,7 +12,7 @@
 </head><body>
 <header><div><h1>S.E.N.N.A. - Usuários</h1><p>Moderação de acessos · Lugar de quem faz</p></div><a href="../central/">← S.E.N.N.A. - Central</a></header>
 <main>
-  <div class="panel note"><b>Papéis:</b> <b>Leitura</b> vê os módulos sem alterar nada. <b>Piloto</b> também sobe cargas e edita metas. <b>Moderador</b> faz tudo e libera acessos.
+  <div class="panel note"><b>Papéis:</b> <b>Leitura</b> vê os módulos sem alterar nada. <b>Auditor</b> realiza checklists, registra fotos, assinaturas e pendências, e só lê os demais módulos. <b>Piloto</b> também sobe cargas, edita metas e configura o modelo do checklist. <b>Moderador</b> faz tudo e libera acessos.
   Bloquear corta o acesso na hora, mesmo com a página aberta. A senha é de cada pessoa: para trocar, ela usa "Esqueci a senha" na tela de entrada.</div>
   <div style="display:flex;gap:10px;align-items:center;margin:6px 0 10px"><label class="note">Mostrar <select id="fSt"><option value="">Todos</option><option value="pendente" selected>Pendentes</option><option value="aprovado">Aprovados</option><option value="bloqueado">Bloqueados</option></select></label><span id="cnt" class="note"></span></div>
   <div class="panel scroll" style="padding:0"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Pedido em</th><th>Situação</th><th>Papel</th><th>Ações</th></tr></thead><tbody id="tb"><tr><td colspan="6" class="note">Carregando…</td></tr></tbody></table></div>
@@ -30,7 +30,7 @@ let L=[];
     $('#tb').innerHTML=v.length?v.map(u=>{const eu=u.id===meuId;const tg={aprovado:'ok',pendente:'warn',bloqueado:'err'}[u.status]||'warn';
       return `<tr data-id="${u.id}"><td>${esc(u.nome||'—')}${eu?' <span class="note">(você)</span>':''}</td><td>${esc(u.email)}</td><td>${u.criadoEm?new Date(u.criadoEm).toLocaleString('pt-BR'):'—'}</td>
       <td><span class="tag ${tg}">${esc(u.status)}</span></td>
-      <td><select data-papel ${eu?'disabled':''}>${['leitor','piloto','moderador'].map(p=>`<option value="${p}" ${u.papel===p?'selected':''}>${{leitor:'Leitura',piloto:'Piloto',moderador:'Moderador'}[p]}</option>`).join('')}</select></td>
+      <td><select data-papel ${eu?'disabled':''}>${['leitor','auditor','piloto','moderador'].map(p=>`<option value="${p}" ${u.papel===p?'selected':''}>${{leitor:'Leitura',auditor:'Auditor',piloto:'Piloto',moderador:'Moderador'}[p]}</option>`).join('')}</select></td>
       <td>${eu?'':(u.status!=='aprovado'?'<button class="btn" data-ac="aprovado">Aprovar</button> ':'')+(u.status!=='bloqueado'?'<button class="btn ghost" data-ac="bloqueado">Bloquear</button>':'')}</td></tr>`;}).join(''):'<tr><td colspan="6" class="note">Ninguém nesta situação.</td></tr>';}
   $('#tb').addEventListener('click',async e=>{const b=e.target.closest('button[data-ac]');if(!b)return;const id=b.closest('tr').dataset.id;b.disabled=true;
     try{await fs.updateDoc(fs.doc(DB,'usuarios/'+id),{status:b.dataset.ac,moderadoEm:new Date().toISOString(),moderadoPor:meuId});}catch(er){alert('Não foi possível alterar: '+(er.code||er));b.disabled=false;}});

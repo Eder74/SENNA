@@ -1,6 +1,6 @@
 /* S.E.N.N.A. · service worker: guarda só as páginas e arquivos do site, nunca os dados.
    Rede primeiro (sempre a versão mais nova); sem internet, abre a última versão salva. */
-const CACHE='senna-v1';
+const CACHE='senna-v2';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{const r=e.request;

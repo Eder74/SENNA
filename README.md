@@ -74,7 +74,7 @@ as cargas, a meta, o resumo do Pit Stop e o status da Central.
 | `io/` | Inventário Oficial |
 | `nal/` | NAL |
 | `nfs/` | NFs Pendentes |
-| `checklists/` | Checklists (quem preenche checklist precisa do papel **Piloto**) |
+| `checklists/` | Checklists (quem preenche checklist precisa do papel **Auditor** ou **Piloto**) |
 | `pitstop/` | Pit Stop (lê ao vivo o resumo que cada módulo grava) |
 | `cadastro/` | Cadastro de Itens (ao gravar uma versão, NAL, Rotativo, Ajustes e I.O. passam a usá-la) |
 

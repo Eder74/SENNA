@@ -70,7 +70,9 @@
     bd().innerHTML=st==='bloqueado'?`<b>Acesso bloqueado</b><p>O moderador bloqueou este acesso. Fale com a Prevenção de Perdas.</p><a id="sx-out">Sair</a>`
       :`<b>Aguardando liberação</b><p>Seu pedido foi registrado. Assim que o moderador aprovar, esta página abre sozinha.</p><a id="sx-out">Sair</a>`;
     document.getElementById('sx-out').onclick=()=>authMod.signOut(auth);}
-  const papelTxt=p=>({moderador:'Moderador',piloto:'Piloto',leitor:'Leitura'}[p]||p);
+  const papelTxt=p=>({moderador:'Moderador',piloto:'Piloto',auditor:'Auditor',leitor:'Leitura'}[p]||p);
+  /* Auditor: faz checklists e só lê os demais módulos */
+  const gravaAqui=()=>PERFIL.papel==='moderador'||PERFIL.papel==='piloto'||(PERFIL.papel==='auditor'&&MOD==='checklists');
   function sair(){authMod.signOut(auth).then(()=>location.reload());}
   function barra(){if(document.getElementById('sx-bar'))return;const b=document.createElement('div');b.id='sx-bar';
     b.innerHTML=`<span>${esc(PERFIL.nome||PERFIL.email)} · ${esc(papelTxt(PERFIL.papel))}</span>${PERFIL.papel==='moderador'?`<a href="${RAIZ}moderacao/">Usuários</a><a href="${RAIZ}importar/">Importar dados</a>`:''}<a id="sx-sair">Sair</a>`;
@@ -139,7 +141,7 @@
   const DB={doc:p=>D(fs.doc(DBF,caminho(p))),collection:p=>(MOD==='pitstop'&&p==='resumo')?resumoPitStop():COL(p)};
   const USER={
     isOwner:async()=>PERFIL.papel==='moderador',canEdit:async()=>PERFIL.papel==='moderador'||PERFIL.papel==='piloto',
-    can:async n=>n==='data.write'?(PERFIL.papel!=='leitor'):null,
+    can:async n=>n==='data.write'?gravaAqui():null,
     id:async()=>UID,me:async()=>({id:UID,name:PERFIL.nome||'',email:PERFIL.email||null}),
     profiles:async ids=>{const out={};for(const id of ids||[]){try{const s=await fs.getDoc(fs.doc(DBF,'usuarios/'+id));const d=s.exists()?s.data():{};out[id]={id,name:d.nome||'',email:d.email||null};}catch(e){out[id]={id,name:''};}}return out;},
     search:async()=>[]};
@@ -169,7 +171,7 @@
 
   window.claude={use:async nome=>{await READY;
     if(nome==='db')return DB;if(nome==='user')return USER;if(nome==='downloads')return DOWNLOADS;
-    if(nome==='assets')return (PERFIL.papel==='leitor')?null:ASSETS;
+    if(nome==='assets')return gravaAqui()?ASSETS:null;
     return null;}};
   /* bases grandes que antes vinham embutidas no HTML: agora ficam no Firestore, protegidas pelo login */
   const T_EMB=700000;
