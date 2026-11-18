@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>S.E.N.N.A. - Importar dados</title><link rel="stylesheet" href="../assets/pagina.css">
+<script src="../assets/firebase-config.js"></script>
+<script src="../assets/senna-runtime.js" data-modulo="importar" data-sem-dados="1"></script>
+</head><body>
+<header><div><h1>S.E.N.N.A. - Importar dados</h1><p>Migração dos módulos do claude.ai para a base protegida</p></div><a href="../central/">← S.E.N.N.A. - Central</a></header>
+<main>
+  <div class="panel note">Escolha os arquivos <code>.senna.json</code> que o Senna gerou (um por módulo). Eles trazem as bases que antes ficavam dentro do HTML e os dados gravados nos módulos (cargas, metas, status).
+  Importar de novo o mesmo arquivo sobrescreve com o mesmo conteúdo. Esses arquivos têm dados da LDM: não suba no GitHub.</div>
+  <div class="panel"><input type="file" id="f" accept=".json" multiple> <button class="btn" id="go" disabled>Importar</button><div id="log" class="note" style="margin-top:12px;white-space:pre-wrap"></div></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);const log=t=>{$('#log').textContent+=t+'\n';};
+(async()=>{await SENNA.pronto;
+  if(SENNA.perfil().papel!=='moderador'){document.querySelector('main').innerHTML='<div class="panel">Esta página é só do moderador.</div>';return;}
+  const fs=SENNA.fs(),DB=SENNA.base();const T=700000;
+  $('#f').onchange=()=>{$('#go').disabled=!$('#f').files.length;};
+  $('#go').onclick=async()=>{$('#go').disabled=true;$('#log').textContent='';
+    for(const file of $('#f').files){let M;try{M=JSON.parse(await file.text());}catch(e){log('✗ '+file.name+': não é um arquivo válido.');continue;}
+      if(!M.modulo||!Array.isArray(M.docs)){log('✗ '+file.name+': formato desconhecido.');continue;}
+      log('▸ '+file.name+' (módulo '+M.modulo+')');
+      try{
+        for(const e of M.embutidos||[]){const n=Math.ceil(e.z.length/T);
+          for(let i=0;i<n;i++){await fs.setDoc(fs.doc(DB,`embutidos/${e.nome}/partes/p${i}`),{z:e.z.slice(i*T,(i+1)*T)});}
+          await fs.setDoc(fs.doc(DB,'embutidos/'+e.nome),{partes:n,modulo:M.modulo,importadoEm:new Date().toISOString()});
+          log('  ✓ base '+e.nome+' ('+n+' partes)');}
+        let k=0;for(const d of M.docs){await fs.setDoc(fs.doc(DB,'modulos/'+M.modulo+'/'+d.path),d.data);k++;if(k%10===0)log('  … '+k+'/'+M.docs.length+' registros');}
+        log('  ✓ '+k+' registros gravados');
+      }catch(e){log('  ✗ parou com erro: '+(e.code||e.message||e));}}
+    log('Fim.');$('#go').disabled=false;};
+})();
+</script></body></html>

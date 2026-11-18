@@ -1,0 +1,20 @@
+:root{--ldm-orange:#FE5000;--ldm-blue:#001A72;--bg:#F4F6FB;--surface:#fff;--text:#1E293B;--muted:#64748B;--line:#E2E8F0;--title:#001A72;--green:#16A34A;--red:#C00000;color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1020;--surface:#141B30;--text:#E5E9F2;--muted:#93A0B8;--line:#2A3453;--title:#AFC2FF;--green:#4ADE80;--red:#FF6B6B;color-scheme:dark;}}
+:root[data-theme="dark"]{--bg:#0B1020;--surface:#141B30;--text:#E5E9F2;--muted:#93A0B8;--line:#2A3453;--title:#AFC2FF;--green:#4ADE80;--red:#FF6B6B;color-scheme:dark;}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--ldm-blue);color:#fff;padding:16px 24px;border-bottom:6px solid var(--ldm-orange);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:18px} header p{margin:3px 0 0;font-size:12px;color:#C9D2F0} header a{color:#FFD9C2;font-weight:bold;font-size:12px;text-decoration:none}
+main{max-width:1200px;margin:0 auto;padding:18px 20px 70px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+h2{font-size:14px;color:var(--title);border-left:4px solid var(--ldm-orange);padding-left:10px;margin:18px 0 10px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px} th{background:#0A1554;color:#fff;text-align:left;padding:7px 9px;font-size:11px;white-space:nowrap}
+td{padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+select,input{height:30px;border:1px solid var(--line);border-radius:6px;padding:0 8px;background:var(--surface);color:var(--text);font-size:12.5px}
+.btn{background:var(--ldm-orange);color:#fff;border:none;padding:8px 14px;border-radius:6px;font-weight:bold;font-size:12.5px;cursor:pointer}
+.btn.blue{background:var(--ldm-blue)} .btn.ghost{background:transparent;color:var(--title);border:1px solid var(--line)} .btn:disabled{opacity:.45}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:bold}
+.tag.ok{background:#DCFCE7;color:#166534}.tag.warn{background:#FEF3C7;color:#92400E}.tag.err{background:#FDE2E2;color:#991B1B}
+.note{font-size:12px;color:var(--muted);line-height:1.55} .ok{color:var(--green);font-weight:bold} .err{color:var(--red);font-weight:bold}

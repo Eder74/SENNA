@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>S.E.N.N.A. - Usuários</title><link rel="stylesheet" href="../assets/pagina.css">
+<script src="../assets/firebase-config.js"></script>
+<script src="../assets/senna-runtime.js" data-modulo="moderacao" data-sem-dados="1"></script>
+</head><body>
+<header><div><h1>S.E.N.N.A. - Usuários</h1><p>Moderação de acessos · Lugar de quem faz</p></div><a href="../central/">← S.E.N.N.A. - Central</a></header>
+<main>
+  <div class="panel note"><b>Papéis:</b> <b>Leitura</b> vê os módulos sem alterar nada. <b>Piloto</b> também sobe cargas e edita metas. <b>Moderador</b> faz tudo e libera acessos.
+  Bloquear corta o acesso na hora, mesmo com a página aberta. A senha é de cada pessoa: para trocar, ela usa "Esqueci a senha" na tela de entrada.</div>
+  <div style="display:flex;gap:10px;align-items:center;margin:6px 0 10px"><label class="note">Mostrar <select id="fSt"><option value="">Todos</option><option value="pendente" selected>Pendentes</option><option value="aprovado">Aprovados</option><option value="bloqueado">Bloqueados</option></select></label><span id="cnt" class="note"></span></div>
+  <div class="panel scroll" style="padding:0"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Pedido em</th><th>Situação</th><th>Papel</th><th>Ações</th></tr></thead><tbody id="tb"><tr><td colspan="6" class="note">Carregando…</td></tr></tbody></table></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let L=[];
+(async()=>{await SENNA.pronto;const P=SENNA.perfil();
+  if(P.papel!=='moderador'){document.querySelector('main').innerHTML='<div class="panel">Esta página é só do moderador.</div>';return;}
+  const fs=SENNA.fs(),DB=SENNA.base();const meuId=await (await claude.use('user')).id();
+  fs.onSnapshot(fs.collection(DB,'usuarios'),q=>{L=q.docs.map(d=>({id:d.id,...d.data()}));render();},e=>{$('#tb').innerHTML='<tr><td colspan="6" class="err">'+esc(e.code||e)+'</td></tr>';});
+  $('#fSt').onchange=render;
+  function render(){const f=$('#fSt').value;const v=L.filter(u=>!f||u.status===f).sort((a,b)=>String(b.criadoEm).localeCompare(String(a.criadoEm)));
+    const pend=L.filter(u=>u.status==='pendente').length;$('#cnt').textContent=pend?pend+' aguardando liberação':'';
+    $('#tb').innerHTML=v.length?v.map(u=>{const eu=u.id===meuId;const tg={aprovado:'ok',pendente:'warn',bloqueado:'err'}[u.status]||'warn';
+      return `<tr data-id="${u.id}"><td>${esc(u.nome||'—')}${eu?' <span class="note">(você)</span>':''}</td><td>${esc(u.email)}</td><td>${u.criadoEm?new Date(u.criadoEm).toLocaleString('pt-BR'):'—'}</td>
+      <td><span class="tag ${tg}">${esc(u.status)}</span></td>
+      <td><select data-papel ${eu?'disabled':''}>${['leitor','piloto','moderador'].map(p=>`<option value="${p}" ${u.papel===p?'selected':''}>${{leitor:'Leitura',piloto:'Piloto',moderador:'Moderador'}[p]}</option>`).join('')}</select></td>
+      <td>${eu?'':(u.status!=='aprovado'?'<button class="btn" data-ac="aprovado">Aprovar</button> ':'')+(u.status!=='bloqueado'?'<button class="btn ghost" data-ac="bloqueado">Bloquear</button>':'')}</td></tr>`;}).join(''):'<tr><td colspan="6" class="note">Ninguém nesta situação.</td></tr>';}
+  $('#tb').addEventListener('click',async e=>{const b=e.target.closest('button[data-ac]');if(!b)return;const id=b.closest('tr').dataset.id;b.disabled=true;
+    try{await fs.updateDoc(fs.doc(DB,'usuarios/'+id),{status:b.dataset.ac,moderadoEm:new Date().toISOString(),moderadoPor:meuId});}catch(er){alert('Não foi possível alterar: '+(er.code||er));b.disabled=false;}});
+  $('#tb').addEventListener('change',async e=>{const s=e.target.closest('select[data-papel]');if(!s)return;const id=s.closest('tr').dataset.id;
+    try{await fs.updateDoc(fs.doc(DB,'usuarios/'+id),{papel:s.value});}catch(er){alert('Não foi possível alterar: '+(er.code||er));}});
+})();
+</script></body></html>
