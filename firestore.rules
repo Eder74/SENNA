@@ -24,15 +24,11 @@ service cloud.firestore {
       allow read: if aprovado();
       allow write: if papel(['piloto', 'moderador']);
     }
-    // Avaliações 👍/👎 do Beto e da Bety: qualquer aprovado registra.
-    match /modulos/{modulo}/aprendizado/{id} {
-      allow create, update: if aprovado();
-    }
-
-    // Bases grandes que antes vinham embutidas no HTML.
+    // Bases grandes que antes vinham embutidas no HTML (cadastro de produtos e bases iniciais).
+    // Piloto grava porque o Cadastro de Itens atualiza a base usada por todos os módulos.
     match /embutidos/{resto=**} {
       allow read: if aprovado();
-      allow write: if papel(['moderador']);
+      allow write: if papel(['piloto', 'moderador']);
     }
   }
 }

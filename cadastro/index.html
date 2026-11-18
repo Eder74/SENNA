@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="../assets/firebase-config.js"></script>
+<script src="../assets/senna-runtime.js" data-modulo="cadastro"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#001A72">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="S.E.N.N.A.">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>S.E.N.N.A. - Cadastro de Itens</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+
+:root{
+  --ldm-orange:#FE5000; --ldm-blue:#001A72; --ldm-white:#FFFFFF;
+  --bg:#F4F6FB; --surface:#FFFFFF; --surface-2:#F8FAFC; --text:#1E293B; --muted:#64748B; --line:#E2E8F0;
+  --title:#001A72; --dark-card:#0A1554; --green:#16A34A; --red:#C00000; --amber:#D97706;
+  --chip-bg:#F8FAFC; --hover:#FFF1E8; --input:#FFFFFF;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1020; --surface:#141B30; --surface-2:#1A2340; --text:#E5E9F2; --muted:#93A0B8; --line:#2A3453;
+    --title:#AFC2FF; --dark-card:#0A1554; --green:#4ADE80; --red:#FF6B6B; --amber:#FBBF24;
+    --chip-bg:#1A2340; --hover:#2A2016; --input:#0F1528; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#141B30; --surface-2:#1A2340; --text:#E5E9F2; --muted:#93A0B8; --line:#2A3453;
+  --title:#AFC2FF; --dark-card:#0A1554; --green:#4ADE80; --red:#FF6B6B; --amber:#FBBF24;
+  --chip-bg:#1A2340; --hover:#2A2016; --input:#0F1528; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding-left:64px;}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:70;background:var(--ldm-blue);}
+button,input,select{font-family:inherit;}
+:focus-visible{outline:2px solid var(--ldm-orange);outline-offset:2px;}
+
+header{background:var(--ldm-blue);color:#fff;padding:18px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-bottom:6px solid var(--ldm-orange);margin-left:-64px;width:calc(100% + 64px);position:relative;z-index:50;}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{background:var(--ldm-orange);color:#fff;font-weight:bold;font-size:17px;letter-spacing:.02em;border-radius:8px;padding:9px 10px;line-height:1;}
+header h1{font-size:19px;margin:0;}
+header p{margin:3px 0 0;font-size:12.5px;color:#C9D2F0;}
+header .tag{font-size:12px;font-style:italic;color:#FFD9C2;}
+.hd-status{display:flex;flex-direction:column;align-items:flex-end;gap:5px;font-size:12px;color:#C9D2F0;}
+.hd-status b{color:#fff;}
+.pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 11px;font-size:11.5px;color:#fff;}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#94A3B8;}
+.pill.ok .dot{background:#4ADE80;} .pill.warn .dot{background:#FBBF24;} .pill.off .dot{background:#F87171;}
+
+.navrail{position:fixed;left:0;top:var(--header-h,84px);bottom:0;width:64px;background:var(--ldm-blue);z-index:60;display:flex;flex-direction:column;align-items:center;
+  padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));gap:8px;border-right:3px solid var(--ldm-orange);}
+.navrail button{width:46px;height:46px;border-radius:10px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;color:#C9D2F0;}
+.navrail button svg{width:24px;height:24px;}
+.navrail button:hover{background:rgba(255,255,255,.12);color:#fff;}
+.navrail button.active{background:#fff;color:var(--ldm-blue);}
+.navrail button.active::before{content:"";position:absolute;left:-9px;top:8px;bottom:8px;width:4px;border-radius:0 3px 3px 0;background:var(--ldm-orange);}
+.navrail button::after{content:attr(data-tip);position:absolute;left:56px;top:50%;transform:translateY(-50%);background:var(--dark-card);color:#fff;font-size:11.5px;font-weight:bold;
+  padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+.navrail button:hover::after,.navrail button:focus-visible::after{opacity:1;}
+
+main{padding:0 26px 60px;max-width:1720px;margin:0 auto;}
+.filters{position:sticky;top:0;z-index:40;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:bold;color:var(--title);letter-spacing:.02em;}
+select,input[type=text],input[type=number]{height:32px;padding:0 8px;border-radius:6px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:12.5px;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 11px;cursor:pointer;background:var(--chip-bg);font-size:12px;color:var(--text);user-select:none;}
+.chip[aria-pressed="true"]{background:var(--ldm-blue);color:#fff;border-color:var(--ldm-blue);}
+.btn{background:var(--ldm-orange);color:#fff;border:none;padding:9px 15px;border-radius:6px;font-weight:bold;font-size:12.5px;cursor:pointer;white-space:nowrap;}
+.btn:hover{opacity:.92;} .btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn.blue{background:var(--ldm-blue);} .btn.ghost{background:transparent;color:var(--title);border:1px solid var(--line);} .btn.green{background:var(--green);}
+.btn.small{padding:6px 11px;font-size:11.5px;}
+
+.section-title{font-size:14px;font-weight:bold;color:var(--title);margin:26px 0 12px;border-left:4px solid var(--ldm-orange);padding-left:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.section-title .grow{flex:1;}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
+.panel h4{margin:0 0 10px;font-size:12.5px;color:var(--title);}
+.note{font-size:11.5px;color:var(--muted);line-height:1.55;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-1-2{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;}
+.chart{position:relative;height:330px;} .chart.sm{height:280px;} .chart.tall{height:520px;}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px;}
+.kpi{background:var(--ldm-blue);color:#fff;border-radius:10px;padding:14px 16px;border-top:4px solid var(--ldm-orange);position:relative;min-height:118px;}
+.kpi .k{font-size:11px;color:#C9D2F0;font-weight:bold;line-height:1.3;}
+.kpi .v{font-size:26px;font-weight:bold;line-height:1.15;margin:7px 0 3px;font-variant-numeric:tabular-nums;}
+.kpi .v.neg{color:#FFB4A2;} .kpi .v.pos{color:#6EE7A8;}
+.kpi .s{font-size:11px;color:#C9D2F0;line-height:1.45;} .kpi .s b{color:#fff;}
+.kpi .badge{position:absolute;top:10px;right:11px;font-size:10px;font-weight:bold;background:rgba(255,255,255,.16);padding:2px 8px;border-radius:9px;}
+
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;}
+.insight{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--ldm-orange);border-radius:10px;padding:13px 15px;font-size:12.5px;line-height:1.55;}
+.insight.blue{border-top-color:var(--ldm-blue);} .insight.green{border-top-color:var(--green);} .insight.red{border-top-color:var(--red);}
+.insight h5{margin:0 0 5px;font-size:13px;color:var(--title);}
+.insight b{color:var(--title);}
+
+table.tb{width:100%;border-collapse:collapse;font-size:12px;}
+table.tb th{background:var(--dark-card);color:#fff;padding:7px 9px;text-align:left;font-size:11px;white-space:nowrap;position:sticky;top:0;z-index:1;}
+table.tb th.sort{cursor:pointer;} table.tb th.sort:hover{background:#13227A;}
+table.tb td{padding:6px 9px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.tb tr:nth-child(even) td{background:var(--surface-2);}
+table.tb td.n,table.tb th.n{text-align:right;font-variant-numeric:tabular-nums;}
+table.tb td.neg{color:var(--red);font-weight:bold;} table.tb td.pos{color:var(--green);font-weight:bold;}
+table.tb tr.click{cursor:pointer;} table.tb tr.click:hover td{background:var(--hover);}
+table.tb tr.tot td{font-weight:bold;background:var(--surface-2);border-top:2px solid var(--line);}
+.scroll{overflow-x:auto;max-width:100%;} .scroll.v{max-height:560px;overflow:auto;}
+td.wrap{white-space:normal;min-width:220px;}
+
+table.heat{border-collapse:separate;border-spacing:2px;font-size:11.5px;width:100%;}
+table.heat th{font-size:10.5px;color:var(--muted);font-weight:bold;padding:4px 5px;text-align:center;white-space:nowrap;}
+table.heat th.lj{text-align:left;color:var(--title);}
+table.heat td{padding:7px 4px;text-align:center;border-radius:4px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:52px;}
+.legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap;}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+
+.upload{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--hover);border:1px dashed var(--ldm-orange);border-radius:8px;padding:13px 16px;}
+.upload .t{font-weight:bold;color:var(--title);font-size:13px;}
+.upload input[type=file]{display:none;}
+.drop.over{outline:3px solid var(--ldm-orange);}
+.res-ok{color:var(--green);font-weight:bold;} .res-err{color:var(--red);font-weight:bold;} .res-warn{color:var(--amber);font-weight:bold;}
+.impact{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0;}
+.impact div{border:1px solid var(--line);border-left:4px solid var(--ldm-orange);border-radius:8px;padding:9px 12px;background:var(--surface-2);}
+.impact .k{font-size:10.5px;color:var(--muted);font-weight:bold;} .impact .v{font-size:18px;font-weight:bold;color:var(--title);margin-top:3px;font-variant-numeric:tabular-nums;}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:bold;}
+.tag.err{background:#FDE2E2;color:#991B1B;} .tag.warn{background:#FEF3C7;color:#92400E;} .tag.ok{background:#DCFCE7;color:#166534;}
+code{background:var(--surface-2);border:1px solid var(--line);padding:0 4px;border-radius:3px;font-size:11.5px;}
+
+.modal{position:fixed;inset:0;background:rgba(0,26,114,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal[hidden]{display:none;}
+.modal-box{background:var(--surface);border-radius:12px;width:100%;max-width:1100px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35);}
+.modal-head{background:var(--ldm-blue);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;gap:14px;border-bottom:5px solid var(--ldm-orange);}
+.modal-head h3{margin:0 0 3px;font-size:15px;} .modal-head .sub{font-size:11.5px;color:#C9D2F0;}
+.modal-close{background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;flex:0 0 auto;}
+.modal-body{padding:14px 18px 18px;overflow:auto;}
+#toast{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:500;max-width:420px;background:var(--ldm-blue);color:#fff;border-left:4px solid var(--ldm-orange);
+  border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s;}
+#toast.vis{opacity:1;transform:none;}
+.loading{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px;}
+.pager{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+footer{text-align:center;font-size:11px;color:var(--muted);padding:18px;border-top:1px solid var(--line);}
+
+@media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr);} .impact{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:900px){.grid2,.grid-1-2{grid-template-columns:1fr;}}
+@media (max-width:760px){
+  body{padding-left:0;}
+  header{margin-left:0;width:100%;padding:14px 16px;}
+  .navrail{position:sticky;top:0;flex-direction:row;width:100%;height:auto;justify-content:space-around;border-right:none;border-bottom:3px solid var(--ldm-orange);padding:6px 0;}
+  .navrail button::after{display:none;}
+  .navrail button.active::before{display:none;}
+  main{padding:0 14px 40px;}
+  .filters{position:static;}
+  .kpis{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:480px){.kpis{grid-template-columns:1fr;}}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+
+
+.kpi .s{min-height:30px}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">LDM</div>
+    <div>
+      <h1>S.E.N.N.A. - Cadastro de Itens</h1>
+      <p>Prevenção de Perdas · base única de produtos, custos e categorias pelo Código BSeller <span class="tag">· Lugar de quem faz</span></p>
+    </div>
+  </div>
+  <div class="hd-status">
+    <a href="../central/" style="color:#FFD9C2;font-weight:bold;text-decoration:none;font-size:12px;">← S.E.N.N.A. - Central</a>
+    <div>Versão em uso: <b id="hdV">—</b> · Códigos: <b id="hdN">—</b></div>
+    <span class="pill" id="hdDb"><span class="dot"></span><span id="hdDbTxt">Conectando…</span></span>
+  </div>
+</header>
+
+<nav class="navrail" id="nav" aria-label="Seções">
+  <button data-page="geral" data-tip="Visão geral" aria-label="Visão geral" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/></svg></button>
+  <button data-page="consulta" data-tip="Consultar itens" aria-label="Consultar itens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+  <button data-page="atualizar" data-tip="Atualizar base" aria-label="Atualizar base" data-ed="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></button>
+  <button data-page="historico" data-tip="Histórico de cargas" aria-label="Histórico de cargas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+</nav>
+
+<main>
+<section id="page-geral"><div class="loading" id="geralBox">Carregando o cadastro…</div></section>
+
+<section id="page-consulta" hidden>
+  <div class="filters">
+    <label style="flex:1;min-width:240px">Código BSeller, EAN ou descrição<input type="text" id="qTxt" placeholder="Ex.: 129916 ou chave fenda" autocomplete="off"></label>
+    <label>Categoria<select id="qCat"></select></label>
+    <label>Status<select id="qSt"><option value="">Todos</option><option value="1">Ativo</option><option value="0">Fora de linha</option></select></label>
+    <label>Custo<select id="qCu"><option value="">Todos</option><option value="z">Custo zero</option><option value="p">Com custo</option></select></label>
+    <label>Confiança da categoria<select id="qCf"></select></label>
+    <button class="btn blue" id="qExp">Exportar resultado (Excel)</button>
+  </div>
+  <div id="qRes"></div>
+</section>
+
+<section id="page-atualizar" hidden>
+  <div class="section-title">Atualizar a base de itens</div>
+  <div class="panel">
+    <div class="upload drop" id="drop">
+      <div><div class="t">Base_EAN (relatório ZBIQ0050) em .xlsx ou .csv</div>
+      <div class="note">Arraste o arquivo aqui ou escolha. Linhas repetidas do mesmo código (um por EAN) viram uma linha só.</div></div>
+      <label class="btn">Escolher arquivo<input type="file" id="fIn" accept=".xlsx,.xls,.csv,.txt"></label>
+    </div>
+    <div style="display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;font-size:12.5px">
+      <label><input type="radio" name="modo" value="substituir" checked> <b>Substituir</b>: o arquivo é a base completa (códigos que não vierem saem da base)</label>
+      <label><input type="radio" name="modo" value="adicionar"> <b>Adicionar/atualizar</b>: só os códigos do arquivo entram ou mudam; o resto fica como está</label>
+    </div>
+  </div>
+  <div id="impBox"></div>
+</section>
+
+<section id="page-historico" hidden><div id="histBox" class="loading">Carregando…</div></section>
+</main>
+
+<div class="modal" id="mdl" hidden><div class="modal-box" style="max-width:560px">
+  <div class="modal-head"><div><h3 id="mdlT"></h3><div class="sub" id="mdlS"></div></div><button class="modal-close" id="mdlX" aria-label="Fechar">✕</button></div>
+  <div class="modal-body"><div id="mdlB" style="font-size:13px;line-height:1.55"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn ghost" id="mdlN">Cancelar</button><button class="btn" id="mdlY">Confirmar</button></div></div>
+</div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<footer>S.E.N.N.A. · Sistema de Estratégia, Neutralização e Navegação Analítica · Loja do Mecânico · Lugar de quem faz</footer>
+
+<script>
+const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];
+const nf0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});const nf2=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fN=v=>v==null||!isFinite(v)?'—':nf0.format(v);
+const fR=v=>v==null||!isFinite(v)?'—':'R$ '+nf2.format(v);
+const fP=v=>v==null||!isFinite(v)?'—':(v*100).toFixed(1).replace('.',',')+'%';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fDt=s=>{if(!s)return '—';const d=new Date(s);if(isNaN(d))return s;return d.toLocaleDateString('pt-BR')+(String(s).length>10?' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'');};
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('vis');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('vis'),5200);}
+function statusDb(c,t){$('#hdDb').className='pill '+c;$('#hdDbTxt').textContent=t;}
+function setHdrH(){document.documentElement.style.setProperty('--header-h',$('#hdr').offsetHeight+'px');}
+window.addEventListener('resize',setHdrH);
+function confirmar(tit,sub,html,ok='Confirmar'){return new Promise(res=>{$('#mdlT').textContent=tit;$('#mdlS').textContent=sub||'';$('#mdlB').innerHTML=html;$('#mdlY').textContent=ok;$('#mdl').hidden=false;
+  const fim=v=>{$('#mdl').hidden=true;$('#mdlY').onclick=$('#mdlN').onclick=$('#mdlX').onclick=null;res(v);};
+  $('#mdlY').onclick=()=>fim(true);$('#mdlN').onclick=()=>fim(false);$('#mdlX').onclick=()=>fim(false);});}
+
+/* ---------- compressão (mesmo formato dos demais módulos) ---------- */
+async function gz(obj){const st=new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'));const b=new Uint8Array(await new Response(st).arrayBuffer());let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
+async function gunz(z){const bin=atob(z);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));return JSON.parse(await new Response(st).text());}
+
+/* ---------- estado ---------- */
+let SDB=null,UCAP=null,EDITOR=false,ME=null,DL=null;
+let ATUAL=null;   /* config/atual */
+let CAD=null;     /* {cats,conf,cod,desc,custo,cat,st,cf,ean} */
+let IDX=null;     /* Map código -> posição */
+let HIST=[];
+const VALIDAS_PADRAO=['Automotivo','Compressores/Pneumat/Movim','Construção/Ferr Manuais','Eletro/Casa e Jardinagem','Ferramentas Eletricas e Marcenaria'];
+const CONF=['Original','Alta','Média','Baixa','Sem correspondência'];
+const REVISAR='Revisar manualmente';
+const T=200000;
+
+const ST={
+  async set(p,o){return SDB.doc(p).set(o);},
+  async get(p){const s=await SDB.doc(p).get();return s.exists?s.data():null;},
+  async del(p){return SDB.doc(p).delete();},
+  async list(c){const s=await SDB.collection(c).get();return s.docs.filter(d=>d.exists).map(d=>({id:d.id,...d.data()}));}
+};
+
+async function carregar(){
+  if(!SDB){statusDb('off','Base compartilhada indisponível');$('#geralBox').innerHTML='<div class="panel">A base compartilhada não abriu. Entre na sua conta claude.ai e recarregue a página.</div>';return;}
+  const tm=setTimeout(()=>statusDb('warn','Demorando para responder…'),10000);
+  try{
+    ATUAL=await ST.get('config/atual');
+    if(ATUAL&&ATUAL.id){let z='';for(let i=0;i<ATUAL.partes;i++){const d=await ST.get(`cadastro/${ATUAL.id}/partes/p${i}`);if(!d)throw new Error('parte '+i+' ausente');z+=d.z;}
+      CAD=await gunz(z);if(!CAD.ean)CAD.ean=[];indexar();}
+    try{HIST=(await ST.list('hist')).sort((a,b)=>String(b.em).localeCompare(String(a.em)));}catch(e){HIST=[];}
+    clearTimeout(tm);statusDb('ok','Base compartilhada conectada');
+  }catch(e){clearTimeout(tm);console.error(e);statusDb('off','Erro ao ler a base');toast('Não foi possível ler o cadastro: '+(e.message||e));}
+  $('#hdV').textContent=ATUAL?('v'+ATUAL.versao+' · '+fDt(ATUAL.geradoEm)):'nenhuma';
+  $('#hdN').textContent=CAD?fN(CAD.cod.length):'—';
+  setHdrH();montarFiltros();ir(location.hash.slice(1)||'geral');
+}
+function indexar(){IDX=new Map();for(let k=0;k<CAD.cod.length;k++)IDX.set(CAD.cod[k],k);}
+
+/* ---------- navegação ---------- */
+const PAGES={geral:renderGeral,consulta:renderConsulta,atualizar:renderAtualizar,historico:renderHist};
+function ir(p){if(!PAGES[p]||(p==='atualizar'&&!EDITOR))p='geral';
+  Object.keys(PAGES).forEach(k=>$('#page-'+k).hidden=k!==p);
+  $$('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+  if(location.hash!=='#'+p)history.replaceState(null,'','#'+p);PAGES[p]();window.scrollTo(0,0);}
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)ir(b.dataset.page);});
+window.addEventListener('hashchange',()=>ir(location.hash.slice(1)));
+
+/* ---------- visão geral ---------- */
+function resumo(C){const n=C.cod.length;const por={};let at=0,z=0,za=0,rv=0,bx=0;
+  for(let k=0;k<n;k++){const c=C.cats[C.cat[k]];const o=por[c]||(por[c]={n:0,at:0,fl:0,z:0,sa:0,na:0});o.n++;
+    const a=C.st[k]===1;if(a){at++;o.at++;if(C.custo[k]>0){o.sa+=C.custo[k];o.na++;}}else o.fl++;
+    if(!(C.custo[k]>0)){z++;o.z++;if(a)za++;}if(c===REVISAR)rv++;if(C.conf[C.cf[k]]==='Baixa')bx++;}
+  return {n,at,fl:n-at,z,za,rv,bx,por};}
+function renderGeral(){const B=$('#geralBox');B.className='';
+  if(!CAD){B.innerHTML=`<div class="section-title">Nenhuma versão gravada</div><div class="panel note">${EDITOR?'Use <b>Atualizar base</b> para carregar a primeira versão.':'O cadastro ainda não foi carregado pelo piloto.'}</div>`;return;}
+  const R=resumo(CAD);
+  const linhas=Object.entries(R.por).sort((a,b)=>a[0]===REVISAR?1:b[0]===REVISAR?-1:b[1].n-a[1].n);
+  B.innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="k">Códigos BSeller</div><div class="v">${fN(R.n)}</div><div class="s">Versão <b>v${ATUAL.versao}</b> · ${esc(ATUAL.arquivo||'')}</div></div>
+    <div class="kpi"><div class="k">Ativos</div><div class="v">${fN(R.at)}</div><div class="s">${fP(R.at/R.n)} da base</div></div>
+    <div class="kpi"><div class="k">Fora de linha</div><div class="v">${fN(R.fl)}</div><div class="s">Recebem a categoria dos ativos parecidos</div></div>
+    <div class="kpi"><div class="k">Ativos com custo zero</div><div class="v neg">${fN(R.za)}</div><div class="s">Perda ou ganho desses itens não é valorizado (${fN(R.z)} no total)</div></div>
+    <div class="kpi"><div class="k">Revisar manualmente</div><div class="v">${fN(R.rv)}</div><div class="s">Sem item ativo parecido · <b>${fN(R.bx)}</b> com confiança baixa</div></div>
+  </div>
+  <div class="section-title">Por categoria S.E.N.N.A.</div>
+  <div class="panel scroll"><table class="tb"><thead><tr><th>Categoria</th><th class="n">Códigos</th><th class="n">Ativos</th><th class="n">Fora de linha</th><th class="n">Custo zero</th><th class="n">Custo médio dos ativos</th></tr></thead><tbody>
+  ${linhas.map(([c,o])=>`<tr class="click" data-cat="${esc(c)}"><td>${esc(c)}</td><td class="n">${fN(o.n)}</td><td class="n">${fN(o.at)}</td><td class="n">${fN(o.fl)}</td><td class="n">${fN(o.z)}</td><td class="n">${o.na?fR(o.sa/o.na):'—'}</td></tr>`).join('')}
+  <tr class="tot"><td>Total</td><td class="n">${fN(R.n)}</td><td class="n">${fN(R.at)}</td><td class="n">${fN(R.fl)}</td><td class="n">${fN(R.z)}</td><td class="n"></td></tr></tbody></table>
+  <div class="note" style="margin-top:8px">Clique numa categoria para ver os itens.</div></div>
+  <div class="section-title">Como os módulos usam este cadastro</div>
+  <div class="insights">
+    <div class="insight"><h5>Chave única: Código BSeller</h5>NAL, Inventários Rotativos, Ajustes e Inventário Oficial cruzam descrição, categoria, status e custo sempre pelo Código BSeller. O EAN é só referência.</div>
+    <div class="insight blue"><h5>Uma base para todos</h5>Ao gravar uma versão nova aqui, NAL, Rotativo, Ajustes e I.O. passam a usá-la na próxima vez que forem abertos.</div>
+    <div class="insight red"><h5>Custo zero fica zero</h5>Não há estimativa de custo. Item com custo zero aparece como valor parcial nos módulos.</div>
+  </div>`;
+  $$('#geralBox tr[data-cat]').forEach(t=>t.onclick=()=>{$('#qCat').value=t.dataset.cat;ir('consulta');});
+}
+
+/* ---------- consulta ---------- */
+function montarFiltros(){
+  const cats=CAD?[...CAD.cats].sort((a,b)=>a===REVISAR?1:b===REVISAR?-1:a.localeCompare(b)):[];
+  $('#qCat').innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  $('#qCf').innerHTML='<option value="">Todas</option>'+CONF.map(c=>`<option>${esc(c)}</option>`).join('');
+}
+const semAc=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+let DESCN=null;
+function filtrar(){if(!CAD)return [];
+  if(!DESCN)DESCN=CAD.desc.map(semAc);
+  const q=semAc($('#qTxt').value.trim()),cat=$('#qCat').value,st=$('#qSt').value,cu=$('#qCu').value,cf=$('#qCf').value;
+  const ci=cat?CAD.cats.indexOf(cat):-1,fi=cf?CAD.conf.indexOf(cf):-1;
+  const pal=q.split(/\s+/).filter(Boolean);const num=/^\d+$/.test(q)?q:null;const out=[];
+  for(let k=0;k<CAD.cod.length;k++){
+    if(cat&&CAD.cat[k]!==ci)continue;if(st&&String(CAD.st[k])!==st)continue;if(cf&&CAD.cf[k]!==fi)continue;
+    if(cu==='z'&&CAD.custo[k]>0)continue;if(cu==='p'&&!(CAD.custo[k]>0))continue;
+    if(pal.length){if(num){if(String(CAD.cod[k])!==num&&String(CAD.ean[k]||'')!==num&&!DESCN[k].includes(num))continue;}
+      else if(!pal.every(p=>DESCN[k].includes(p)))continue;}
+    out.push(k);}
+  if(num)out.sort((a,b)=>(String(CAD.cod[b])===num)-(String(CAD.cod[a])===num));
+  return out;}
+function renderConsulta(){const box=$('#qRes');
+  if(!CAD){box.innerHTML='<div class="loading">Nenhuma versão do cadastro gravada.</div>';return;}
+  const L=filtrar(),M=300;
+  box.innerHTML=`<div class="note" style="margin:10px 0">${fN(L.length)} ${L.length===1?'item':'itens'}${L.length>M?` · mostrando os ${M} primeiros (refine a busca ou exporte)`:''}</div>
+  <div class="panel scroll v" style="padding:0"><table class="tb"><thead><tr><th class="n">Código BSeller</th><th>Descrição</th><th class="n">Custo unitário</th><th>Categoria S.E.N.N.A.</th><th>Status</th><th>Confiança</th><th>EAN principal</th></tr></thead><tbody>
+  ${L.slice(0,M).map(k=>{const cf=CAD.conf[CAD.cf[k]];const tg=cf==='Original'?'ok':(cf==='Alta'||cf==='Média')?'ok':'warn';
+    return `<tr><td class="n">${CAD.cod[k]}</td><td class="wrap">${esc(CAD.desc[k])}</td><td class="n${CAD.custo[k]>0?'':' neg'}">${CAD.custo[k]>0?fR(CAD.custo[k]):'R$ 0,00'}</td><td>${esc(CAD.cats[CAD.cat[k]])}</td><td>${CAD.st[k]===1?'<span class="tag ok">Ativo</span>':'<span class="tag warn">Fora de linha</span>'}</td><td><span class="tag ${tg}">${esc(cf)}</span></td><td>${esc(CAD.ean[k]||'—')}</td></tr>`;}).join('')}
+  </tbody></table></div>`;}
+let tq;['#qTxt'].forEach(s=>$(s).addEventListener('input',()=>{clearTimeout(tq);tq=setTimeout(renderConsulta,250);}));
+['#qCat','#qSt','#qCu','#qCf'].forEach(s=>$(s).addEventListener('change',renderConsulta));
+$('#qExp').onclick=async()=>{if(!CAD)return;const L=filtrar();if(!L.length){toast('Nada para exportar.');return;}
+  if(!DL){toast('Exportação indisponível neste navegador.');return;}
+  if(!window.XLSX){toast('Gerador de Excel não carregou. Recarregue a página.');return;}
+  toast('Gerando o Excel de '+fN(L.length)+' itens…');await new Promise(r=>setTimeout(r,30));
+  const rows=[['Código BSeller','Descrição','Custo unitário (R$)','Categoria S.E.N.N.A.','Status','Confiança da categoria','EAN principal']];
+  for(const k of L)rows.push([CAD.cod[k],CAD.desc[k],CAD.custo[k],CAD.cats[CAD.cat[k]],CAD.st[k]===1?'Ativo':'Fora de linha',CAD.conf[CAD.cf[k]],CAD.ean[k]||'']);
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:14},{wch:60},{wch:16},{wch:34},{wch:13},{wch:20},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,'Produtos');
+  const data=new Uint8Array(XLSX.write(wb,{type:'array',bookType:'xlsx'}));
+  try{await DL.save({filename:`SENNA_Cadastro_Itens_v${ATUAL.versao}${L.length<CAD.cod.length?'_filtro':''}.xlsx`,data});}catch(e){if(e&&e.code!=='dismissed'&&e.code!=='not_granted')toast('Não foi possível salvar: '+(e.message||e.code));}};
+
+/* ---------- importação ---------- */
+let IMP=null;
+const normH=s=>semAc(s).replace(/[^a-z0-9]+/g,' ').trim();
+function acharColunas(h){const H=h.map(normH);const f=t=>H.findIndex(t);
+  return {cod:f(x=>x.includes('bseller')||(/\bcod/.test(x)&&!/barra|ean|categ|fornec|ncm|depart/.test(x))),
+    desc:f(x=>x.includes('descri')||x==='produto'||x==='nome'),
+    custo:f(x=>x.includes('custo')),
+    cat:f(x=>x.includes('categoria')||x.includes('departamento')),
+    ean:f(x=>x==='ean'||x.includes('ean')||x.includes('barra')),
+    st:f(x=>x==='status'||x.includes('situa'))};}
+function numBR(v){if(v==null||v==='')return 0;if(typeof v==='number')return v;let s=String(v).trim().replace(/[R$\s]/g,'');
+  if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');const n=parseFloat(s);return isFinite(n)?n:0;}
+async function lerArquivo(f){const buf=await f.arrayBuffer();
+  if(/\.(csv|txt)$/i.test(f.name)){let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){t=new TextDecoder('windows-1252').decode(buf);}
+    const l=t.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());const sep=(l[0].match(/;/g)||[]).length>=(l[0].match(/,/g)||[]).length?';':',';
+    return l.map(x=>x.split(sep).map(c=>c.replace(/^"|"$/g,'')));}
+  if(!window.XLSX)throw new Error('Leitor de Excel não carregou. Recarregue a página.');
+  const wb=XLSX.read(buf,{type:'array'});let best=null;
+  for(const n of wb.SheetNames){const r=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null});if(!best||r.length>best.length)best=r;}
+  return best||[];}
+
+/* recategorização: itens fora de linha ou sem departamento válido recebem a categoria dos ativos com descrição parecida */
+const STOP=new Set(['de','da','do','das','dos','p','para','com','c','e','em','a','o','x','pc','pcs','und','un','kit','jg','jogo']);
+const tokens=d=>semAc(d).replace(/[^a-z0-9]+/g,' ').split(' ').filter(w=>w.length>1&&!/^\d/.test(w)&&!STOP.has(w));
+function recategorizar(itens,validas){
+  const g={1:new Map(),2:new Map(),3:new Map()};
+  const add=(m,k,c)=>{let o=m.get(k);if(!o){o={t:0,c:{}};m.set(k,o);}o.t++;o.c[c]=(o.c[c]||0)+1;};
+  for(const it of itens){if(it.at&&validas.has(it.catO)){const w=tokens(it.desc);for(const n of [1,2,3])if(w.length>=n)add(g[n],w.slice(0,n).join(' '),it.catO);}}
+  const top=o=>{let b=null,v=0;for(const [c,n] of Object.entries(o.c))if(n>v){v=n;b=c;}return {c:b,s:v/o.t,t:o.t};};
+  let mud=0;
+  for(const it of itens){
+    if(it.at&&validas.has(it.catO)){it.cat=it.catO;it.cf='Original';continue;}
+    if(validas.has(it.catO)&&!it.at){it.cat=it.catO;it.cf='Original';continue;}
+    const w=tokens(it.desc);let r=null;
+    for(const n of [3,2]){if(w.length>=n){const o=g[n].get(w.slice(0,n).join(' '));if(o&&o.t>=3){const tp=top(o);if(tp.s>=0.6){r={c:tp.c,cf:'Alta'};break;}}}}
+    if(!r&&w.length){const o=g[1].get(w[0]);if(o){const tp=top(o);r=(o.t>=5&&tp.s>=0.6)?{c:tp.c,cf:'Média'}:{c:tp.c,cf:'Baixa'};}}
+    if(!r){r={c:REVISAR,cf:'Sem correspondência'};}
+    it.cat=r.c;it.cf=r.cf;mud++;}
+  return mud;}
+
+async function processar(f){
+  const modo=document.querySelector('input[name=modo]:checked').value;
+  IMP={arquivo:f.name,modo,lendo:true};renderAtualizar();await new Promise(r=>setTimeout(r,40));
+  let rows;try{rows=await lerArquivo(f);}catch(e){IMP={erro:e.message||String(e)};renderAtualizar();return;}
+  let hi=-1,cols=null;for(let i=0;i<Math.min(15,rows.length);i++){const c=acharColunas((rows[i]||[]).map(x=>x==null?'':String(x)));if(c.cod>=0&&c.desc>=0){hi=i;cols=c;break;}}
+  if(hi<0){IMP={erro:'Não encontrei o cabeçalho com as colunas de código BSeller e descrição nas 15 primeiras linhas. Confira se é a Base_EAN (ZBIQ0050).'};renderAtualizar();return;}
+  const cab=rows[hi].map(x=>x==null?'':String(x));
+  const avisos=[];if(cols.custo<0)avisos.push('Coluna de custo não encontrada: todos os itens do arquivo entram com custo zero.');
+  if(cols.cat<0)avisos.push('Coluna de categoria não encontrada: a categoria será definida só pela recategorização.');
+  /* agrupa por código */
+  const por=new Map();let lin=0,semCod=0,conflCusto=0;
+  for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r)continue;const cs=String(r[cols.cod]??'').trim().replace(/\.0+$/,'');
+    if(!cs){if(r.some(x=>x!=null&&x!==''))semCod++;continue;}const cod=parseInt(cs,10);if(!isFinite(cod)){semCod++;continue;}lin++;
+    const desc=String(r[cols.desc]??'').trim();const cu=cols.custo>=0?Math.round(numBR(r[cols.custo])*10000)/10000:0;
+    const catTxt=cols.cat>=0?String(r[cols.cat]??'').trim():'';const stTxt=cols.st>=0?semAc(r[cols.st]):'';
+    const ean=cols.ean>=0?String(r[cols.ean]??'').trim().replace(/\.0+$/,''):'';
+    let o=por.get(cod);
+    if(!o){const fl=/fora de linha/.test(semAc(catTxt))||/fora de linha|inativ/.test(stTxt);
+      o={cod,desc,custo:cu,catO:/fora de linha/.test(semAc(catTxt))?'':catTxt,at:!fl,ean,neans:ean?1:0};por.set(cod,o);}
+    else{if(ean&&ean!==o.ean)o.neans++;if(!o.desc&&desc)o.desc=desc;if(cu>0&&o.custo>0&&Math.abs(cu-o.custo)>0.0001)conflCusto++;if(!(o.custo>0)&&cu>0)o.custo=cu;}}
+  if(!por.size){IMP={erro:'O arquivo não tem linhas com código BSeller.'};renderAtualizar();return;}
+  if(semCod)avisos.push(`${fN(semCod)} linhas sem código BSeller válido foram ignoradas.`);
+  if(conflCusto)avisos.push(`${fN(conflCusto)} linhas repetidas de um mesmo código trazem custo diferente; ficou o primeiro custo encontrado.`);
+  /* categorias válidas: as do cadastro atual, ou as mais frequentes entre os ativos do arquivo */
+  let validas=new Set((CAD?CAD.cats:VALIDAS_PADRAO).filter(c=>c!==REVISAR));
+  const catsArq=new Map();for(const o of por.values())if(o.at&&o.catO)catsArq.set(o.catO,(catsArq.get(o.catO)||0)+1);
+  const novasCats=[...catsArq.entries()].filter(([c,n])=>!validas.has(c)&&n>=0.01*por.size);
+  if(novasCats.length)avisos.push('Departamentos novos no arquivo, tratados como válidos: '+novasCats.map(([c,n])=>`${c} (${fN(n)})`).join(', ')+'.');
+  novasCats.forEach(([c])=>validas.add(c));
+  /* modo adicionar: a recategorização usa também os ativos que já estão na base */
+  const itens=[...por.values()];const ref=[...itens];
+  if(modo==='adicionar'&&CAD){for(let k=0;k<CAD.cod.length;k++)if(!por.has(CAD.cod[k])&&CAD.st[k]===1&&CAD.conf[CAD.cf[k]]==='Original')ref.push({desc:CAD.desc[k],catO:CAD.cats[CAD.cat[k]],at:true,_ref:1});}
+  recategorizar(ref,validas);
+  /* comparação com a versão em uso */
+  const dif={novos:0,custo:0,cat:0,st:0,desc:0,removidos:0,ex:[]};
+  for(const o of itens){const k=IDX?IDX.get(o.cod):undefined;
+    if(k===undefined){dif.novos++;if(dif.ex.length<400)dif.ex.push({t:'Novo',o});continue;}
+    const m=[];if(Math.abs((CAD.custo[k]||0)-o.custo)>0.0001){dif.custo++;m.push('custo '+fR(CAD.custo[k])+' → '+fR(o.custo));}
+    if(CAD.cats[CAD.cat[k]]!==o.cat){dif.cat++;m.push('categoria '+CAD.cats[CAD.cat[k]]+' → '+o.cat);}
+    if((CAD.st[k]===1)!==o.at){dif.st++;m.push(o.at?'voltou a ativo':'saiu de linha');}
+    if(o.desc&&CAD.desc[k]!==o.desc)dif.desc++;
+    if(m.length&&dif.ex.length<400)dif.ex.push({t:'Alterado',o,m:m.join(' · ')});}
+  if(modo==='substituir'&&CAD){for(const c of CAD.cod)if(!por.has(c))dif.removidos++;}
+  if(modo==='substituir'&&CAD&&por.size<0.9*CAD.cod.length)avisos.unshift(`<b>Atenção:</b> o arquivo tem ${fN(por.size)} códigos, contra ${fN(CAD.cod.length)} da versão em uso. No modo Substituir, ${fN(dif.removidos)} códigos sairiam da base. Confira se é a base completa.`);
+  const cnt={};for(const o of itens)cnt[o.cf]=(cnt[o.cf]||0)+1;
+  IMP={arquivo:f.name,modo,itens,lin,dif,avisos,cnt,cab,cols,validas:[...validas]};renderAtualizar();}
+
+function renderAtualizar(){const B=$('#impBox');if(!IMP){B.innerHTML='';return;}
+  if(IMP.lendo){B.innerHTML='<div class="loading">Lendo '+esc(IMP.arquivo)+'… arquivos grandes levam alguns segundos.</div>';return;}
+  if(IMP.erro){B.innerHTML=`<div class="panel" style="margin-top:14px"><span class="res-err">Não deu para importar.</span> ${esc(IMP.erro)}</div>`;return;}
+  if(IMP.feito){B.innerHTML=`<div class="panel" style="margin-top:14px"><span class="res-ok">Versão v${IMP.feito} gravada.</span> <span class="note">NAL, Rotativo, Ajustes e I.O. já usam a versão nova a partir da próxima abertura.</span></div>`;return;}
+  const D=IMP.dif,I=IMP;const col=k=>I.cols[k]>=0?esc(I.cab[I.cols[k]]):'<span class="res-warn">não encontrada</span>';
+  B.innerHTML=`<div class="section-title">Prévia · ${esc(I.arquivo)} <span class="tag ${I.modo==='substituir'?'warn':'ok'}">${I.modo==='substituir'?'Substituir':'Adicionar/atualizar'}</span></div>
+  <div class="panel">
+    <div class="note">Colunas lidas: código <b>${col('cod')}</b> · descrição <b>${col('desc')}</b> · custo <b>${col('custo')}</b> · categoria <b>${col('cat')}</b> · EAN <b>${col('ean')}</b>${I.cols.st>=0?' · status <b>'+col('st')+'</b>':''}. ${fN(I.lin)} linhas viraram ${fN(I.itens.length)} códigos.</div>
+    ${I.avisos.length?'<ul class="note" style="margin:10px 0 0;padding-left:18px">'+I.avisos.map(a=>'<li>'+a+'</li>').join('')+'</ul>':''}
+    <div class="impact">
+      <div><div class="k">Códigos novos</div><div class="v">${fN(D.novos)}</div></div>
+      <div><div class="k">Custo alterado</div><div class="v">${fN(D.custo)}</div></div>
+      <div><div class="k">Categoria alterada</div><div class="v">${fN(D.cat)}</div></div>
+      <div><div class="k">${I.modo==='substituir'?'Saem da base':'Status alterado'}</div><div class="v">${fN(I.modo==='substituir'?D.removidos:D.st)}</div></div>
+    </div>
+    <div class="note">Recategorização dos itens do arquivo: ${CONF.map(c=>`${c} <b>${fN(I.cnt[c]||0)}</b>`).join(' · ')}. Regra: Alta = 60% ou mais de 3+ ativos com as mesmas 2 ou 3 primeiras palavras; Média = mesma regra pela 1ª palavra (5+ ativos); Baixa = maioria simples; Sem correspondência = vai para "${REVISAR}".${I.modo==='substituir'?'':' Status alterado: '+fN(D.st)+'.'}</div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn" id="btGrava">Gravar como v${(ATUAL?ATUAL.versao:0)+1}</button><button class="btn ghost" id="btCanc">Descartar</button></div>
+  </div>
+  ${D.ex.length?`<div class="section-title">Exemplos de mudanças <span class="note">(até 400)</span></div><div class="panel scroll v" style="padding:0"><table class="tb"><thead><tr><th>Tipo</th><th class="n">Código</th><th>Descrição</th><th>O que muda</th></tr></thead><tbody>
+  ${D.ex.map(e=>`<tr><td><span class="tag ${e.t==='Novo'?'ok':'warn'}">${e.t}</span></td><td class="n">${e.o.cod}</td><td class="wrap">${esc(e.o.desc)}</td><td class="wrap">${esc(e.m||(e.o.cat+' · '+fR(e.o.custo)))}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+  $('#btCanc').onclick=()=>{IMP=null;$('#fIn').value='';renderAtualizar();};
+  $('#btGrava').onclick=gravar;}
+
+async function gravar(){const I=IMP;const nv=(ATUAL?ATUAL.versao:0)+1;
+  const ok=await confirmar(`Gravar a versão v${nv}?`,I.arquivo,
+    I.modo==='substituir'?`A base passa a ter <b>${fN(I.itens.length)}</b> códigos${I.dif.removidos?`, e <b>${fN(I.dif.removidos)}</b> códigos saem`:''}.`:`<b>${fN(I.dif.novos)}</b> códigos entram e os demais do arquivo são atualizados. Os códigos que não estão no arquivo ficam como estão.`,'Gravar');
+  if(!ok)return;
+  $('#btGrava').disabled=true;$('#btGrava').textContent='Gravando…';
+  try{
+    /* monta a nova base */
+    const lista=new Map();
+    if(I.modo==='adicionar'&&CAD){for(let k=0;k<CAD.cod.length;k++)lista.set(CAD.cod[k],{cod:CAD.cod[k],desc:CAD.desc[k],custo:CAD.custo[k],cat:CAD.cats[CAD.cat[k]],at:CAD.st[k]===1,cf:CAD.conf[CAD.cf[k]],ean:CAD.ean[k]||''});}
+    for(const o of I.itens){const ant=lista.get(o.cod);lista.set(o.cod,{cod:o.cod,desc:o.desc||(ant&&ant.desc)||'',custo:o.custo,cat:o.cat,at:o.at,cf:o.cf,ean:o.ean||(ant&&ant.ean)||''});}
+    const arr=[...lista.values()].sort((a,b)=>a.cod-b.cod);
+    const cats=[...new Set(arr.map(o=>o.cat))];const ci=new Map(cats.map((c,i)=>[c,i]));
+    const N={versao:'v'+nv,arquivo:I.arquivo,geradoEm:new Date().toISOString().slice(0,10),cats,conf:CONF,
+      cod:arr.map(o=>o.cod),cat:arr.map(o=>ci.get(o.cat)),custo:arr.map(o=>o.custo),desc:arr.map(o=>o.desc),st:arr.map(o=>o.at?1:0),cf:arr.map(o=>Math.max(0,CONF.indexOf(o.cf))),ean:arr.map(o=>o.ean),abc:null};
+    const z=await gz(N);const n=Math.ceil(z.length/T)||1;const id='v'+nv+'-'+Date.now().toString(36);
+    for(let i=0;i<n;i++){$('#btGrava').textContent=`Gravando ${i+1}/${n}…`;await ST.set(`cadastro/${id}/partes/p${i}`,{z:z.slice(i*T,(i+1)*T)});}
+    const em=new Date().toISOString();
+    const anterior=ATUAL;
+    const nova={id,versao:nv,partes:n,arquivo:I.arquivo,geradoEm:N.geradoEm,em,porId:ME,modo:I.modo,n:arr.length};
+    await ST.set('config/atual',nova);
+    $('#btGrava').textContent='Atualizando os módulos…';await SENNA.gravarEmbutido('cadastro-produtos',z,{versao:nv,arquivo:I.arquivo});
+    await ST.set('hist/'+id,{versao:nv,arquivo:I.arquivo,em,porId:ME,modo:I.modo,n:arr.length,novos:I.dif.novos,custo:I.dif.custo,cat:I.dif.cat,st:I.dif.st,removidos:I.dif.removidos});
+    if(anterior&&anterior.id){for(let i=0;i<anterior.partes;i++){try{await ST.del(`cadastro/${anterior.id}/partes/p${i}`);}catch(e){}}}
+    ATUAL=nova;CAD=N;DESCN=null;indexar();HIST.unshift({id,...nova,novos:I.dif.novos,custo:I.dif.custo,cat:I.dif.cat,st:I.dif.st,removidos:I.dif.removidos});
+    $('#hdV').textContent='v'+nv+' · '+fDt(N.geradoEm);$('#hdN').textContent=fN(arr.length);montarFiltros();
+    IMP={feito:nv};renderAtualizar();toast('Versão v'+nv+' gravada.');
+  }catch(e){console.error(e);toast(e&&e.code==='quota_exceeded'?'O espaço da base acabou.':'Não foi possível gravar: '+(e.message||e.code||e));$('#btGrava').disabled=false;$('#btGrava').textContent='Gravar como v'+nv;}}
+
+const drop=$('#drop');
+$('#fIn').addEventListener('change',e=>{const f=e.target.files[0];if(f)processar(f);});
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');const f=e.dataTransfer.files[0];if(f)processar(f);});
+
+/* ---------- histórico ---------- */
+async function renderHist(){const B=$('#histBox');B.className='';
+  if(!HIST.length){B.innerHTML='<div class="section-title">Histórico de cargas</div><div class="panel note">Nenhuma carga registrada.</div>';return;}
+  const ids=[...new Set(HIST.map(h=>h.porId).filter(Boolean))];let P={};
+  try{if(UCAP&&ids.length)P=await UCAP.profiles(ids);}catch(e){}
+  const quem=h=>h.porId?((P[h.porId]&&P[h.porId].name)||'Usuário'):'Senna (carga inicial)';
+  B.innerHTML=`<div class="section-title">Histórico de cargas</div><div class="panel scroll" style="padding:0"><table class="tb"><thead><tr><th>Versão</th><th>Quando</th><th>Quem</th><th>Arquivo</th><th>Modo</th><th class="n">Códigos</th><th class="n">Novos</th><th class="n">Custo alterado</th><th class="n">Categoria alterada</th><th class="n">Saíram</th></tr></thead><tbody>
+  ${HIST.map(h=>`<tr><td><b>v${h.versao}</b>${ATUAL&&h.versao===ATUAL.versao?' <span class="tag ok">em uso</span>':''}</td><td>${fDt(h.em)}</td><td>${esc(quem(h))}</td><td class="wrap">${esc(h.arquivo)}</td><td>${esc(h.modo)}</td><td class="n">${fN(h.n)}</td><td class="n">${fN(h.novos)}</td><td class="n">${fN(h.custo)}</td><td class="n">${fN(h.cat)}</td><td class="n">${fN(h.removidos)}</td></tr>`).join('')}
+  </tbody></table></div>`;}
+
+/* ---------- início ---------- */
+(async()=>{
+  setHdrH();
+  try{UCAP=window.claude?await window.claude.use('user'):null;}catch(e){UCAP=null;}
+  try{EDITOR=UCAP?await UCAP.canEdit():false;}catch(e){EDITOR=false;}
+  try{if(UCAP)ME=await UCAP.id();}catch(e){}
+  try{SDB=window.claude?await window.claude.use('db'):null;}catch(e){SDB=null;}
+  try{DL=window.claude?await window.claude.use('downloads'):null;}catch(e){DL=null;}
+  if(!EDITOR)$$('#nav [data-ed]').forEach(b=>b.remove());
+  $('#hdDb').insertAdjacentHTML('afterend',`<span class="pill" style="background:${EDITOR?'rgba(254,80,0,.9)':'rgba(255,255,255,.12)'}">${EDITOR?'Piloto · edição':'Somente leitura'}</span>`);
+  await carregar();
+})();
+
+</script>
+</body>
+</html>

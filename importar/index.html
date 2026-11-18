@@ -1,33 +1,71 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>S.E.N.N.A. - Importar dados</title><link rel="stylesheet" href="../assets/pagina.css">
+<link rel="stylesheet" href="../assets/app.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#001A72">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
 <script src="../assets/firebase-config.js"></script>
 <script src="../assets/senna-runtime.js" data-modulo="importar" data-sem-dados="1"></script>
 </head><body>
-<header><div><h1>S.E.N.N.A. - Importar dados</h1><p>Migração dos módulos do claude.ai para a base protegida</p></div><a href="../central/">← S.E.N.N.A. - Central</a></header>
+<header><div><h1>S.E.N.N.A. - Importar dados</h1><p>Atualização dos módulos a partir dos arquivos gerados pelo Senna</p></div><a href="../central/">← S.E.N.N.A. - Central</a></header>
 <main>
-  <div class="panel note">Escolha os arquivos <code>.senna.json</code> que o Senna gerou (um por módulo). Eles trazem as bases que antes ficavam dentro do HTML e os dados gravados nos módulos (cargas, metas, status).
-  Importar de novo o mesmo arquivo sobrescreve com o mesmo conteúdo. Esses arquivos têm dados da LDM: não suba no GitHub.</div>
-  <div class="panel"><input type="file" id="f" accept=".json" multiple> <button class="btn" id="go" disabled>Importar</button><div id="log" class="note" style="margin-top:12px;white-space:pre-wrap"></div></div>
+  <div class="panel note">Escolha os arquivos <code>.senna.json</code> que o Senna gerou (um por módulo).
+  A importação <b>substitui</b> os dados do módulo: depois dela, a base fica exatamente igual à do arquivo. Cargas que não estão no arquivo são apagadas, para não somar em dobro.
+  Os usuários e os acessos não são afetados. Esses arquivos têm dados da LDM: não suba no GitHub.</div>
+  <div class="panel"><input type="file" id="f" accept=".json" multiple> <button class="btn" id="go" disabled>Importar e substituir</button><div id="log" class="note" style="margin-top:12px;white-space:pre-wrap"></div></div>
 </main>
 <script>
 const $=s=>document.querySelector(s);const log=t=>{$('#log').textContent+=t+'\n';};
+/* coleções que os módulos usam hoje; as do arquivo entram junto */
+const COLS_CONHECIDAS=['cargas','cargasNota','config','pitstop','aprendizado','status','logica','inventarios','rascunhos','acuracidades','avaliacoes','briefings','modelos','pendencias','resumo','cadastro','hist'];
+/* fotos e assinaturas feitas no site nunca são apagadas pela importação */
+const PRESERVAR=p=>p.startsWith('_blobs/');
+const SUBS_CONHECIDAS=['partes'];
 (async()=>{await SENNA.pronto;
   if(SENNA.perfil().papel!=='moderador'){document.querySelector('main').innerHTML='<div class="panel">Esta página é só do moderador.</div>';return;}
   const fs=SENNA.fs(),DB=SENNA.base();const T=700000;
   $('#f').onchange=()=>{$('#go').disabled=!$('#f').files.length;};
-  $('#go').onclick=async()=>{$('#go').disabled=true;$('#log').textContent='';
-    for(const file of $('#f').files){let M;try{M=JSON.parse(await file.text());}catch(e){log('✗ '+file.name+': não é um arquivo válido.');continue;}
+
+  /* lista todos os documentos que existem hoje no módulo (coleções de 1º nível e subcoleções conhecidas) */
+  async function existentes(mod,cols,subs){const out=new Set();
+    for(const c of cols){let q;try{q=await fs.getDocs(fs.collection(DB,`modulos/${mod}/${c}`));}catch(e){continue;}
+      for(const d of q.docs){out.add(`${c}/${d.id}`);
+        for(const s of subs){try{const q2=await fs.getDocs(fs.collection(DB,`modulos/${mod}/${c}/${d.id}/${s}`));q2.docs.forEach(x=>out.add(`${c}/${d.id}/${s}/${x.id}`));}catch(e){}}}}
+    return out;}
+
+  $('#go').onclick=async()=>{
+    const arqs=[...$('#f').files];
+    if(!confirm('Os dados dos módulos destes arquivos serão substituídos pelo conteúdo deles. Continuar?'))return;
+    $('#go').disabled=true;$('#log').textContent='';
+    for(const file of arqs){let M;try{M=JSON.parse(await file.text());}catch(e){log('✗ '+file.name+': não é um arquivo válido.');continue;}
       if(!M.modulo||!Array.isArray(M.docs)){log('✗ '+file.name+': formato desconhecido.');continue;}
-      log('▸ '+file.name+' (módulo '+M.modulo+')');
+      const mod=M.modulo;log('▸ '+file.name+' (módulo '+mod+', gerado em '+(M.geradoEm||'—')+')');
       try{
+        /* 1. o que existe hoje */
+        const cols=new Set(COLS_CONHECIDAS),subs=new Set(SUBS_CONHECIDAS);
+        for(const d of M.docs){const p=d.path.split('/');cols.add(p[0]);if(p.length>=4)subs.add(p[2]);}
+        const antes=await existentes(mod,[...cols],[...subs]);
+        const novos=new Set(M.docs.map(d=>d.path));
+        const sobra=[...antes].filter(p=>!novos.has(p)&&!PRESERVAR(p));
+        log('  hoje: '+antes.size+' registros · arquivo: '+novos.size+' · a apagar: '+sobra.length);
+        /* 2. grava o conteúdo novo primeiro, para a base nunca ficar vazia */
         for(const e of M.embutidos||[]){const n=Math.ceil(e.z.length/T);
-          for(let i=0;i<n;i++){await fs.setDoc(fs.doc(DB,`embutidos/${e.nome}/partes/p${i}`),{z:e.z.slice(i*T,(i+1)*T)});}
-          await fs.setDoc(fs.doc(DB,'embutidos/'+e.nome),{partes:n,modulo:M.modulo,importadoEm:new Date().toISOString()});
+          let nAnt=0;try{const m=await fs.getDoc(fs.doc(DB,'embutidos/'+e.nome));if(m.exists())nAnt=m.data().partes||0;}catch(x){}
+          for(let i=0;i<n;i++)await fs.setDoc(fs.doc(DB,`embutidos/${e.nome}/partes/p${i}`),{z:e.z.slice(i*T,(i+1)*T)});
+          await fs.setDoc(fs.doc(DB,'embutidos/'+e.nome),{partes:n,modulo:mod,importadoEm:new Date().toISOString()});
+          for(let i=n;i<nAnt;i++){try{await fs.deleteDoc(fs.doc(DB,`embutidos/${e.nome}/partes/p${i}`));}catch(x){}}
           log('  ✓ base '+e.nome+' ('+n+' partes)');}
-        let k=0;for(const d of M.docs){await fs.setDoc(fs.doc(DB,'modulos/'+M.modulo+'/'+d.path),d.data);k++;if(k%10===0)log('  … '+k+'/'+M.docs.length+' registros');}
+        let k=0;for(const d of M.docs){await fs.setDoc(fs.doc(DB,`modulos/${mod}/${d.path}`),d.data);k++;if(k%10===0)log('  … '+k+'/'+M.docs.length+' gravados');}
         log('  ✓ '+k+' registros gravados');
-      }catch(e){log('  ✗ parou com erro: '+(e.code||e.message||e));}}
-    log('Fim.');$('#go').disabled=false;};
+        /* 3. apaga o que não está mais no arquivo (partes antes da carga) */
+        sobra.sort((a,b)=>b.split('/').length-a.split('/').length);
+        let r=0;for(const p of sobra){try{await fs.deleteDoc(fs.doc(DB,`modulos/${mod}/${p}`));r++;}catch(x){log('  ! não apagou '+p+': '+(x.code||x));}}
+        log('  ✓ '+r+' registros antigos apagados');
+        await fs.setDoc(fs.doc(DB,'modulos/'+mod),{ultimaImportacao:new Date().toISOString(),arquivo:file.name,geradoEm:M.geradoEm||null,registros:k},{merge:true});
+      }catch(e){log('  ✗ parou com erro: '+(e.code||e.message||e)+'. Os dados gravados até aqui ficam; rode a importação de novo.');}}
+    log('Fim. Quem abrir ou recarregar o módulo já vê os dados novos.');$('#go').disabled=false;};
 })();
 </script></body></html>

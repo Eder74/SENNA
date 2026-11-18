@@ -64,8 +64,31 @@ Com o moderador ativo, abra **Importar dados** e selecione `ajustes.senna.json` 
 (entregues separadamente pelo Senna, fora do repositório). Eles trazem a base de lançamentos, o cadastro de produtos,
 as cargas, a meta, o resumo do Pit Stop e o status da Central.
 
+## Módulos
+
+| Pasta | Módulo |
+|---|---|
+| `central/` | S.E.N.N.A. - Central |
+| `ajustes/` | Ajustes |
+| `rotativo/` | Inventários Rotativos |
+| `io/` | Inventário Oficial |
+| `nal/` | NAL |
+| `nfs/` | NFs Pendentes |
+| `checklists/` | Checklists (quem preenche checklist precisa do papel **Piloto**) |
+| `pitstop/` | Pit Stop (lê ao vivo o resumo que cada módulo grava) |
+| `cadastro/` | Cadastro de Itens (ao gravar uma versão, NAL, Rotativo, Ajustes e I.O. passam a usá-la) |
+
+## App no celular e no tablet
+
+No celular ou tablet, os módulos ganham uma barra inferior (Início, Módulos e Conta) e botões maiores.
+Para instalar como app:
+- **Android (Chrome):** menu ⋮ › **Instalar app**, ou Conta › **Instalar o app neste aparelho**.
+- **iPhone/iPad (Safari):** botão Compartilhar › **Adicionar à Tela de Início**.
+
+O app guarda só as páginas, nunca os dados: sem internet ele abre, mas os números precisam de conexão.
+
 ## Limites desta versão
 
-- **Beto e Bety ficam sem chat.** O chat usa o Claude e precisa de uma chave de API guardada em servidor (Cloud Function), nunca no código do site.
-- **Só Central e Ajustes foram migrados.** Os atalhos da Central para NAL, Rotativo, I.O., Checklists e Pit Stop ainda abrem no claude.ai.
-- **Depois da migração, as bases andam separadas.** Uma carga feita no claude.ai não aparece aqui, e vice-versa: defina qual é a oficial.
+- **Beto e Bety foram retirados.**
+- **Fotos e assinaturas do Checklists** ficam no próprio Firestore, reduzidas para caber (até ~650 KB cada).
+- **Importar dados substitui o módulo inteiro.** Se o módulo já recebeu cargas direto no site, não importe o arquivo dele de novo.

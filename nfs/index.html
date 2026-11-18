@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script src="../assets/firebase-config.js"></script>
+<script src="../assets/senna-runtime.js" data-modulo="nfs"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#001A72">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="S.E.N.N.A.">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>S.E.N.N.A. - NFs Pendentes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ldm-orange:#FE5000; --ldm-blue:#001A72; --ldm-white:#FFFFFF;
+  --bg:#F4F6FB; --surface:#FFFFFF; --surface-2:#F8FAFC; --text:#1E293B; --muted:#64748B; --line:#E2E8F0;
+  --title:#001A72; --dark-card:#0A1554; --green:#16A34A; --red:#C00000; --amber:#D97706;
+  --chip-bg:#F8FAFC; --hover:#FFF1E8; --input:#FFFFFF;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1020; --surface:#141B30; --surface-2:#1A2340; --text:#E5E9F2; --muted:#93A0B8; --line:#2A3453;
+    --title:#AFC2FF; --dark-card:#0A1554; --green:#4ADE80; --red:#FF6B6B; --amber:#FBBF24;
+    --chip-bg:#1A2340; --hover:#2A2016; --input:#0F1528; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#141B30; --surface-2:#1A2340; --text:#E5E9F2; --muted:#93A0B8; --line:#2A3453;
+  --title:#AFC2FF; --dark-card:#0A1554; --green:#4ADE80; --red:#FF6B6B; --amber:#FBBF24;
+  --chip-bg:#1A2340; --hover:#2A2016; --input:#0F1528; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding-left:64px;}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:70;background:var(--ldm-blue);}
+button,input,select{font-family:inherit;}
+:focus-visible{outline:2px solid var(--ldm-orange);outline-offset:2px;}
+
+header{background:var(--ldm-blue);color:#fff;padding:18px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-bottom:6px solid var(--ldm-orange);margin-left:-64px;width:calc(100% + 64px);position:relative;z-index:50;}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{background:var(--ldm-orange);color:#fff;font-weight:bold;font-size:17px;letter-spacing:.02em;border-radius:8px;padding:9px 10px;line-height:1;}
+header h1{font-size:19px;margin:0;}
+header p{margin:3px 0 0;font-size:12.5px;color:#C9D2F0;}
+header .tag{font-size:12px;font-style:italic;color:#FFD9C2;}
+.hd-status{display:flex;flex-direction:column;align-items:flex-end;gap:5px;font-size:12px;color:#C9D2F0;}
+.hd-status b{color:#fff;}
+.pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 11px;font-size:11.5px;color:#fff;}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#94A3B8;}
+.pill.ok .dot{background:#4ADE80;} .pill.warn .dot{background:#FBBF24;} .pill.off .dot{background:#F87171;}
+
+.navrail{position:fixed;left:0;top:var(--header-h,84px);bottom:0;width:64px;background:var(--ldm-blue);z-index:60;display:flex;flex-direction:column;align-items:center;
+  padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));gap:8px;border-right:3px solid var(--ldm-orange);}
+.navrail button{width:46px;height:46px;border-radius:10px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;color:#C9D2F0;}
+.navrail button svg{width:24px;height:24px;}
+.navrail button:hover{background:rgba(255,255,255,.12);color:#fff;}
+.navrail button.active{background:#fff;color:var(--ldm-blue);}
+.navrail button.active::before{content:"";position:absolute;left:-9px;top:8px;bottom:8px;width:4px;border-radius:0 3px 3px 0;background:var(--ldm-orange);}
+.navrail button::after{content:attr(data-tip);position:absolute;left:56px;top:50%;transform:translateY(-50%);background:var(--dark-card);color:#fff;font-size:11.5px;font-weight:bold;
+  padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+.navrail button:hover::after,.navrail button:focus-visible::after{opacity:1;}
+
+main{padding:0 26px 60px;max-width:1720px;margin:0 auto;}
+.filters{position:sticky;top:0;z-index:40;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:bold;color:var(--title);letter-spacing:.02em;}
+select,input[type=text],input[type=number]{height:32px;padding:0 8px;border-radius:6px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:12.5px;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 11px;cursor:pointer;background:var(--chip-bg);font-size:12px;color:var(--text);user-select:none;}
+.chip[aria-pressed="true"]{background:var(--ldm-blue);color:#fff;border-color:var(--ldm-blue);}
+.btn{background:var(--ldm-orange);color:#fff;border:none;padding:9px 15px;border-radius:6px;font-weight:bold;font-size:12.5px;cursor:pointer;white-space:nowrap;}
+.btn:hover{opacity:.92;} .btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn.blue{background:var(--ldm-blue);} .btn.ghost{background:transparent;color:var(--title);border:1px solid var(--line);} .btn.green{background:var(--green);}
+.btn.small{padding:6px 11px;font-size:11.5px;}
+
+.section-title{font-size:14px;font-weight:bold;color:var(--title);margin:26px 0 12px;border-left:4px solid var(--ldm-orange);padding-left:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.section-title .grow{flex:1;}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
+.panel h4{margin:0 0 10px;font-size:12.5px;color:var(--title);}
+.note{font-size:11.5px;color:var(--muted);line-height:1.55;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-1-2{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;}
+.chart{position:relative;height:330px;} .chart.sm{height:280px;} .chart.tall{height:520px;}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px;}
+.kpi{background:var(--ldm-blue);color:#fff;border-radius:10px;padding:14px 16px;border-top:4px solid var(--ldm-orange);position:relative;min-height:118px;}
+.kpi .k{font-size:11px;color:#C9D2F0;font-weight:bold;line-height:1.3;}
+.kpi .v{font-size:26px;font-weight:bold;line-height:1.15;margin:7px 0 3px;font-variant-numeric:tabular-nums;}
+.kpi .v.neg{color:#FFB4A2;} .kpi .v.pos{color:#6EE7A8;}
+.kpi .s{font-size:11px;color:#C9D2F0;line-height:1.45;} .kpi .s b{color:#fff;}
+.kpi .badge{position:absolute;top:10px;right:11px;font-size:10px;font-weight:bold;background:rgba(255,255,255,.16);padding:2px 8px;border-radius:9px;}
+
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;}
+.insight{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--ldm-orange);border-radius:10px;padding:13px 15px;font-size:12.5px;line-height:1.55;}
+.insight.blue{border-top-color:var(--ldm-blue);} .insight.green{border-top-color:var(--green);} .insight.red{border-top-color:var(--red);}
+.insight h5{margin:0 0 5px;font-size:13px;color:var(--title);}
+.insight b{color:var(--title);}
+
+table.tb{width:100%;border-collapse:collapse;font-size:12px;}
+table.tb th{background:var(--dark-card);color:#fff;padding:7px 9px;text-align:left;font-size:11px;white-space:nowrap;position:sticky;top:0;z-index:1;}
+table.tb th.sort{cursor:pointer;} table.tb th.sort:hover{background:#13227A;}
+table.tb td{padding:6px 9px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.tb tr:nth-child(even) td{background:var(--surface-2);}
+table.tb td.n,table.tb th.n{text-align:right;font-variant-numeric:tabular-nums;}
+table.tb td.neg{color:var(--red);font-weight:bold;} table.tb td.pos{color:var(--green);font-weight:bold;}
+table.tb tr.click{cursor:pointer;} table.tb tr.click:hover td{background:var(--hover);}
+table.tb tr.tot td{font-weight:bold;background:var(--surface-2);border-top:2px solid var(--line);}
+.scroll{overflow-x:auto;max-width:100%;} .scroll.v{max-height:560px;overflow:auto;}
+td.wrap{white-space:normal;min-width:220px;}
+
+table.heat{border-collapse:separate;border-spacing:2px;font-size:11.5px;width:100%;}
+table.heat th{font-size:10.5px;color:var(--muted);font-weight:bold;padding:4px 5px;text-align:center;white-space:nowrap;}
+table.heat th.lj{text-align:left;color:var(--title);}
+table.heat td{padding:7px 4px;text-align:center;border-radius:4px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:52px;}
+.legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap;}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+
+.upload{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--hover);border:1px dashed var(--ldm-orange);border-radius:8px;padding:13px 16px;}
+.upload .t{font-weight:bold;color:var(--title);font-size:13px;}
+.upload input[type=file]{display:none;}
+.drop.over{outline:3px solid var(--ldm-orange);}
+.res-ok{color:var(--green);font-weight:bold;} .res-err{color:var(--red);font-weight:bold;} .res-warn{color:var(--amber);font-weight:bold;}
+.impact{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0;}
+.impact div{border:1px solid var(--line);border-left:4px solid var(--ldm-orange);border-radius:8px;padding:9px 12px;background:var(--surface-2);}
+.impact .k{font-size:10.5px;color:var(--muted);font-weight:bold;} .impact .v{font-size:18px;font-weight:bold;color:var(--title);margin-top:3px;font-variant-numeric:tabular-nums;}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:bold;}
+.tag.err{background:#FDE2E2;color:#991B1B;} .tag.warn{background:#FEF3C7;color:#92400E;} .tag.ok{background:#DCFCE7;color:#166534;}
+code{background:var(--surface-2);border:1px solid var(--line);padding:0 4px;border-radius:3px;font-size:11.5px;}
+
+.modal{position:fixed;inset:0;background:rgba(0,26,114,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal[hidden]{display:none;}
+.modal-box{background:var(--surface);border-radius:12px;width:100%;max-width:1100px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35);}
+.modal-head{background:var(--ldm-blue);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;gap:14px;border-bottom:5px solid var(--ldm-orange);}
+.modal-head h3{margin:0 0 3px;font-size:15px;} .modal-head .sub{font-size:11.5px;color:#C9D2F0;}
+.modal-close{background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;flex:0 0 auto;}
+.modal-body{padding:14px 18px 18px;overflow:auto;}
+#toast{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:500;max-width:420px;background:var(--ldm-blue);color:#fff;border-left:4px solid var(--ldm-orange);
+  border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s;}
+#toast.vis{opacity:1;transform:none;}
+.loading{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px;}
+.pager{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+footer{text-align:center;font-size:11px;color:var(--muted);padding:18px;border-top:1px solid var(--line);}
+
+@media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr);} .impact{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:900px){.grid2,.grid-1-2{grid-template-columns:1fr;}}
+@media (max-width:760px){
+  body{padding-left:0;}
+  header{margin-left:0;width:100%;padding:14px 16px;}
+  .navrail{position:sticky;top:0;flex-direction:row;width:100%;height:auto;justify-content:space-around;border-right:none;border-bottom:3px solid var(--ldm-orange);padding:6px 0;}
+  .navrail button::after{display:none;}
+  .navrail button.active::before{display:none;}
+  main{padding:0 14px 40px;}
+  .filters{position:static;}
+  .kpis{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:480px){.kpis{grid-template-columns:1fr;}}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<style>
+.kpi .meta{font-size:10.5px;color:#C9D2F0;margin-top:4px;}
+.kpi .v.warn{color:#FFD58A;}
+.cls{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:bold;}
+.cls.g{background:#DCFCE7;color:#166534;} .cls.b{background:#FEF3C7;color:#92400E;} .cls.c{background:#FDE2E2;color:#991B1B;}
+td.ok{color:var(--green);font-weight:bold;} td.mid{color:var(--amber);font-weight:bold;} td.bad{color:var(--red);font-weight:bold;}
+.thr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+.thr div{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--surface-2);font-size:11.5px;line-height:1.6;}
+.thr b{color:var(--title);}
+.diag{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
+.diag .insight ul{margin:6px 0 0;padding-left:18px;} .diag .insight li{margin:3px 0;}
+.impact span.k,.impact span.v,.effort span{display:block;}
+table.tb td.wrap{white-space:normal;min-width:200px;}
+.grid2>*,.grid-1-2>*{min-width:0;}
+.effort{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0;}
+.effort div{border:1px solid var(--line);border-left:4px solid var(--ldm-blue);border-radius:8px;padding:10px 12px;background:var(--surface);}
+.effort .k{font-size:10.5px;color:var(--muted);font-weight:bold;} .effort .v{font-size:20px;font-weight:bold;color:var(--title);margin-top:3px;}
+.effort .s{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+@media (max-width:1200px){.effort{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:700px){.thr{grid-template-columns:1fr;}.effort{grid-template-columns:1fr;}}
+</style>
+<style>
+.cls.p{background:var(--surface-2);color:var(--muted);border:1px solid var(--line);}
+.dotc{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+.impact small{font-size:11px;color:var(--muted);font-weight:bold;}
+.flds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 18px;}
+.fld>span{display:block;font-size:10.5px;font-weight:bold;color:var(--muted);margin-bottom:3px;}
+.fld>div{font-size:12.5px;line-height:1.5;}
+.fld.full{grid-column:1/-1;}
+.txt{white-space:pre-wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.55;max-height:220px;overflow:auto;}
+input[type=date]{height:32px;padding:0 8px;border-radius:6px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:12.5px;font-family:inherit;}
+.kpis .kpi .badge{max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media (max-width:700px){.flds{grid-template-columns:1fr;}}
+</style>
+<style>.impact.c5{grid-template-columns:repeat(5,1fr);} @media (max-width:1200px){.impact.c5{grid-template-columns:repeat(3,1fr);}} @media (max-width:700px){.impact.c5{grid-template-columns:1fr 1fr;}} table.heat td:last-child{border-left:2px solid var(--line);}</style>
+</head>
+<body>
+<header id="hdr">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">LDM</div>
+    <div>
+      <h1>S.E.N.N.A. - NFs Pendentes</h1>
+      <p>Prevenção de Perdas · dias entre o envio e a entrada das NFs de transferência <span class="tag">· Lugar de quem faz</span></p>
+    </div>
+  </div>
+  <div class="hd-status">
+    <a href="../central/" data-nav onclick="event.preventDefault();try{window.top.location.href=this.href;}catch(e){window.location.href=this.href;}" style="color:#FFD9C2;font-weight:bold;text-decoration:none;font-size:12px;">← S.E.N.N.A. - Central</a>
+    <div>Entradas até <b id="hdUltima">—</b></div>
+    <span class="pill" id="hdDb"><span class="dot"></span><span id="hdDbTxt">Carregando base…</span></span>
+  </div>
+</header>
+
+<nav class="navrail" id="nav" aria-label="Seções">
+  <button data-page="painel" data-tip="Painel NFs" aria-label="Painel NFs" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/></svg></button>
+  <button data-page="mensal" data-tip="Filial x mês" aria-label="Filial x mês">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg></button>
+  <button data-page="rotas" data-tip="Rotas" aria-label="Rotas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></svg></button>
+  <button data-page="nfs" data-tip="NFs" aria-label="NFs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></button>
+  <button data-page="dados" data-tip="Atualizar dados" aria-label="Atualizar dados">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></button>
+</nav>
+
+<main>
+  <div class="filters" id="filtros">
+    <label>Período da entrada<select id="fMes"></select></label>
+    <label>De<input type="date" id="fIni"></label>
+    <label>Até<input type="date" id="fFim"></label>
+    <label>Visão<select id="fVisao"><option value="d">Filial de destino (entrada)</option><option value="o">Filial de origem (envio)</option></select></label>
+    <label>Distrito<select id="fDist"><option value="">Todos</option></select></label>
+    <label>Filial<select id="fFil"><option value="">Todas</option></select></label>
+    <label>Tipo de operação<select id="fTop"><option value="">Todos</option></select></label>
+    <label>Situação NR<select id="fSit"><option value="">Todas</option></select></label>
+    <button class="btn ghost small" id="fLimpar">Limpar filtros</button>
+  </div>
+
+  <div id="loading" class="loading">Carregando NFs…</div>
+
+  <section id="page-painel" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="impact c5" id="impact"></div>
+    <div class="section-title">O que os números estão dizendo</div>
+    <div class="insights" id="insights"></div>
+
+    <div class="section-title">Ranking das filiais <span class="grow"></span><button class="btn small" id="expRank">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbRank"></table></div>
+      <div class="thr" id="thr" style="grid-template-columns:1fr;"></div>
+      <div class="note" style="margin-top:8px;">Clique numa filial para ver as NFs dela no período. Clique no título de uma coluna para ordenar. A visão (destino ou origem) muda no filtro acima.</div></div>
+
+    <div class="section-title">Atraso por filial <span class="grow"></span>
+      <div class="chips" id="filModo"><span class="chip" role="button" tabindex="0" data-m="pct" aria-pressed="true">% em atraso</span><span class="chip" role="button" tabindex="0" data-m="atr" aria-pressed="false">NFs em atraso</span><span class="chip" role="button" tabindex="0" data-m="med" aria-pressed="false">Média de dias</span></div></div>
+    <div class="panel"><div class="chart"><canvas id="chFil"></canvas></div><div class="legend" id="lgFil"></div></div>
+
+    <div class="grid2" style="margin-top:14px;">
+      <div class="panel"><h4>Dias até a entrada</h4><div class="chart sm"><canvas id="chDist"></canvas></div>
+        <div class="note">Verde: entrada no mesmo dia. Amarelo: dentro do limite. Vermelho: em atraso.</div></div>
+      <div class="panel"><h4>Por tipo de operação</h4><div class="scroll"><table class="tb" id="tbTop"></table></div></div>
+    </div>
+  </section>
+
+  <section id="page-mensal" hidden>
+    <div class="section-title">Evolução por mês da entrada</div>
+    <div class="panel"><div class="chart"><canvas id="chMes"></canvas></div>
+      <div class="note">Barras: NFs que deram entrada no mês, dentro do limite e em atraso. Linha: % em atraso (eixo da direita).</div></div>
+
+    <div class="section-title">Filial x mês <span class="grow"></span>
+      <div class="chips" id="heatModo"><span class="chip" role="button" tabindex="0" data-m="atr" aria-pressed="true">NFs em atraso</span><span class="chip" role="button" tabindex="0" data-m="pct" aria-pressed="false">% em atraso</span><span class="chip" role="button" tabindex="0" data-m="n" aria-pressed="false">NFs com entrada</span></div>
+      <button class="btn small" id="expHeat">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="heat" id="tbHeat"></table></div>
+      <div class="legend" id="lgHeat"></div></div>
+
+    <div class="section-title">Resumo por mês <span class="grow"></span><button class="btn small" id="expMes">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbMes"></table></div></div>
+  </section>
+
+  <section id="page-rotas" hidden>
+    <div class="section-title">Rotas origem → destino <span class="grow"></span><button class="btn small" id="expRotas">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll v"><table class="tb" id="tbRotas"></table></div>
+      <div class="note" style="margin-top:8px;" id="rtNota"></div></div>
+  </section>
+
+  <section id="page-nfs" hidden>
+    <div class="section-title">NFs no período <span class="grow"></span>
+      <select id="nfSo"><option value="">Todas as NFs</option><option value="atr">Só em atraso</option><option value="emi">Só calculadas pela emissão</option></select>
+      <input type="text" id="nfBusca" placeholder="NF, Id NR, filial ou usuário" style="width:240px;">
+      <button class="btn small" id="expNF">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbNF"></table></div><div class="pager" id="nfPager"></div>
+      <div class="note" style="margin-top:6px;">Base do cálculo: ETR quando a ETR é anterior à entrada; nos outros casos, a emissão da nota. Dias arredondados; resultado negativo conta como 0.</div></div>
+  </section>
+
+  <section id="page-dados" hidden>
+    <div class="section-title">Adicionar exportações</div>
+    <div class="panel">
+      <div class="upload drop" id="dropUp">
+        <span style="font-size:22px;" aria-hidden="true">📤</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Envie a exportação de NFs do jeito que sai do sistema</div>
+          <div class="note">Aceita .xlsx e .csv com as colunas <code>Id NR</code>, <code>Filial Origem</code>, <code>Filial Destino</code>, <code>Data Emissão Nota</code> e <code>Data Emissão NR</code> (as demais, como <code>Data ETR</code>, entram quando existirem). O rodapé de filtros aplicados é ignorado. Pode enviar vários arquivos de uma vez.</div>
+        </div>
+        <button class="btn" id="btnUp">Selecionar arquivos</button>
+        <input type="file" id="fileUp" accept=".xlsx,.xls,.xlsm,.csv" multiple>
+      </div>
+      <div id="resUp"></div>
+      <div class="note" style="margin-top:10px;line-height:1.7;">Cada NF é identificada pelo <code>Id NR</code>: se já existe, a linha nova substitui a antiga (entrada, ETR e situação atualizadas); se não existe, é adicionada. <span id="txtOndeCargas">As cargas ficam na base compartilhada: todos que abrem o módulo veem os mesmos dados.</span></div>
+    </div>
+
+    <div class="section-title">Substituir a base inteira</div>
+    <div class="panel">
+      <div class="upload drop" id="dropBase" style="background:transparent;border-color:var(--ldm-blue);">
+        <span style="font-size:22px;" aria-hidden="true">🔁</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Envie a exportação completa, no mesmo formato aceito acima</div>
+          <div class="note">Use quando a extração vier inteira e só ela deve valer. Para desfazer, exclua a carga no histórico abaixo.</div>
+        </div>
+        <button class="btn blue" id="btnBase">Selecionar base</button>
+        <input type="file" id="fileBase" accept=".xlsx,.xls,.xlsm,.csv" multiple>
+      </div>
+      <div id="resBase"></div>
+    </div>
+
+    <div class="section-title">Qualidade da base</div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbQual"></table></div></div>
+
+    <div class="section-title">Metas e regras</div>
+    <div class="panel">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;" id="metasForm"></div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn blue small" id="metaSalvar">Salvar metas e regras</button>
+        <button class="btn ghost small" id="metaPadrao">Voltar ao padrão</button>
+        <span class="note">Atraso: NF com mais dias que o limite entre o envio e a entrada. As NFs com entrada nos últimos dias informados ficam fora de todos os números, porque ainda podem estar em expedição no CD (0 desliga a regra). Com meta e máximo preenchidos, a filial é Gabarito! até a meta, Boa entre a meta e o máximo e Crítica acima do máximo.</span>
+      </div>
+    </div>
+
+    <div class="section-title">Histórico de cargas</div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbCargas"></table></div>
+      <div style="margin-top:10px;"><button class="btn ghost small" id="btnReset">Voltar só para a base embutida</button></div></div>
+  </section>
+</main>
+
+<div class="modal" id="mdDet" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="mdDetT">
+    <div class="modal-head"><div><h3 id="mdDetT"></h3><div class="sub" id="mdDetS"></div></div><button class="modal-close" data-close aria-label="Fechar">✕</button></div>
+    <div class="modal-body"><div class="impact" id="mdDetK"></div>
+      <div id="mdDetL"><div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;"><span class="note" id="mdDetN"></span><span style="flex:1;"></span><button class="btn small" id="mdDetExp">Exportar Excel</button></div><div class="scroll"><table class="tb" id="mdDetTb"></table></div></div></div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<footer>Loja do Mecânico · Prevenção de Perdas · NFs Pendentes · Base: exportação de NFs de transferência com NR emitida · Confidencial</footer>
+<script>
+/* S.E.N.N.A. · confirmação na própria página (o confirm() do navegador é bloqueado dentro do visualizador) */
+function pergunta(msg){return new Promise(res=>{
+  const bg=document.createElement('div');
+  bg.style.cssText='position:fixed;inset:0;background:rgba(0,10,50,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const bx=document.createElement('div');bx.setAttribute('role','dialog');bx.setAttribute('aria-modal','true');
+  bx.style.cssText='background:#fff;color:#1E293B;max-width:460px;width:100%;border-radius:12px;border-top:6px solid #FE5000;padding:22px 22px 18px;font-family:Arial,Helvetica,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.35);';
+  const p=document.createElement('div');p.textContent=msg;p.style.cssText='white-space:pre-wrap;font-size:14px;line-height:1.5;margin-bottom:18px;';
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;justify-content:flex-end;';
+  const mk=(t,bgc,c,bd)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='font:bold 13px Arial,Helvetica,sans-serif;padding:9px 18px;border-radius:8px;cursor:pointer;background:'+bgc+';color:'+c+';border:1px solid '+bd+';';return b;};
+  const no=mk('Cancelar','#fff','#001A72','#001A72'),ok=mk('Confirmar','#FE5000','#fff','#FE5000');
+  const fim=v=>{document.removeEventListener('keydown',tecla,true);bg.remove();res(v);};
+  const tecla=e=>{if(e.key==='Escape'){e.stopPropagation();fim(false);}};
+  no.onclick=()=>fim(false);ok.onclick=()=>fim(true);bg.onclick=e=>{if(e.target===bg)fim(false);};
+  document.addEventListener('keydown',tecla,true);
+  row.append(no,ok);bx.append(p,row);bg.append(bx);document.body.append(bg);ok.focus();});}
+</script>
+<script>let PAYLOAD=null; /* vem da base protegida: embutidos/nfs-payload */</script>
+<script>
+"use strict";
+/* ---------------- utilidades ---------------- */
+const $=s=>document.querySelector(s);
+const DAY=86400000;
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MES3=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const nf0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+const nf1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const fN=v=>v==null?'—':nf0.format(v);
+const fP=(v,d=1)=>(v==null||!isFinite(v))?'—':(v<0?'−':'')+Math.abs(v*100).toFixed(d).replace('.',',')+'%';
+const fDias=v=>v==null?'—':(v<1?'menos de 1 dia':nf1.format(v)+(v<2?' dia':' dias'));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const dkey=t=>Math.floor(t/DAY);
+const dDate=d=>new Date(d*DAY);
+const fD=d=>{const x=dDate(d);return String(x.getUTCDate()).padStart(2,'0')+'/'+String(x.getUTCMonth()+1).padStart(2,'0')+'/'+x.getUTCFullYear();};
+const fDH=t=>{if(t==null)return '—';const x=new Date(t);return fD(dkey(t))+' '+String(x.getUTCHours()).padStart(2,'0')+':'+String(x.getUTCMinutes()).padStart(2,'0');};
+const isoD=d=>dDate(d).toISOString().slice(0,10);
+const fromIso=s=>{const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?Date.UTC(+m[1],+m[2]-1,+m[3])/DAY:null;};
+const mkOf=d=>{const x=dDate(d);return x.getUTCFullYear()*12+x.getUTCMonth();};
+const mkLabel=mk=>MESES[mk%12]+' '+Math.floor(mk/12);
+const mkShort=mk=>MES3[mk%12]+'/'+String(Math.floor(mk/12)).slice(2);
+const semOf=d=>{const wd=(dDate(d).getUTCDay()+6)%7;return d-wd;}; // segunda-feira
+const median=a=>{const v=a.filter(x=>x!=null).sort((x,y)=>x-y);if(!v.length)return null;const m=v.length>>1;return v.length%2?v[m]:(v[m-1]+v[m])/2;};
+function toast(msg,ms=4200){const t=$('#toast');t.textContent=msg;t.classList.add('vis');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('vis'),ms);}
+async function gunzipB64(b64){
+  const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const st=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(st).text();
+}
+async function gzipB64(obj){const st=new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'));const buf=new Uint8Array(await new Response(st).arrayBuffer());let s='';for(let i=0;i<buf.length;i+=0x8000)s+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000));return btoa(s);}
+
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function parseCSV(txt){
+  if(txt.charCodeAt(0)===0xFEFF)txt=txt.slice(1);
+  const l1=txt.slice(0,txt.indexOf('\n')>0?txt.indexOf('\n'):txt.length);
+  const d=(l1.split(';').length>l1.split(',').length)?';':',';
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<txt.length;i++){const c=txt[i];
+    if(q){if(c==='"'){if(txt[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else if(c==='"')q=true;
+    else if(c===d){row.push(f);f='';}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}
+    else if(c!=='\r')f+=c;}
+  if(f!==''||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function xlDate(v){
+  if(v==null||v==='')return null;
+  if(typeof v==='number')return Math.round((v-25569)*DAY);
+  if(v instanceof Date)return Date.UTC(v.getFullYear(),v.getMonth(),v.getDate(),v.getHours(),v.getMinutes(),v.getSeconds());
+  const s=String(v).trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?/);
+  if(m)return Date.UTC(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T]?(\d{2})?:?(\d{2})?:?(\d{2})?/);
+  if(m)return Date.UTC(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  return null;
+}
+function decodeTexto(buf){try{return new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){return new TextDecoder('windows-1252').decode(buf);}}
+
+function table(id,cols,rows,opt={}){
+  const el=$(id);const key=id;
+  const s=sorts[key]||opt.sort||null;
+  let data=rows.slice();
+  if(s){const c=cols.find(c=>c.k===s.k);if(c){const f=c.sv||(r=>r[c.k]);data.sort((a,b)=>{let x=f(a),y=f(b);if(x==null)x=s.d>0?Infinity:-Infinity;if(y==null)y=s.d>0?Infinity:-Infinity;return (x>y?1:x<y?-1:0)*s.d;});}}
+  if(opt.offset)data=data.slice(opt.offset);
+  if(opt.limit)data=data.slice(0,opt.limit);
+  let h='<thead><tr>'+cols.map(c=>`<th class="${c.n?'n ':''}sort" data-k="${c.k}" title="${esc(c.tip||'')}">${c.t}${s&&s.k===c.k?(s.d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>';
+  h+=data.map((r,i)=>`<tr class="${opt.click?'click':''}" data-i="${rows.indexOf(r)}">`+cols.map(c=>{const v=c.f?c.f(r,i+(opt.offset||0)):r[c.k];const cl=(c.n?'n ':'')+(c.cl?c.cl(r):'');return `<td class="${cl}">${v??'—'}</td>`;}).join('')+'</tr>').join('');
+  if(opt.total)h+='<tr class="tot">'+cols.map(c=>{const v=opt.total[c.k];return `<td class="${c.n?'n':''}">${v??''}</td>`;}).join('')+'</tr>';
+  if(!data.length)h+=`<tr><td colspan="${cols.length}" class="note" style="padding:16px;">${opt.vazio||'Nenhum chamado no filtro. Amplie o período ou limpe os filtros.'}</td></tr>`;
+  el.innerHTML=h+'</tbody>';
+  el.querySelectorAll('th.sort').forEach(th=>th.onclick=()=>{const k=th.dataset.k;const cur=sorts[key]||opt.sort;sorts[key]={k,d:cur&&cur.k===k?-cur.d:-1};if(opt.onSort)opt.onSort();table(id,cols,rows,opt);});
+  if(opt.click)el.querySelectorAll('tr.click').forEach(tr=>tr.onclick=()=>opt.click(rows[+tr.dataset.i]));
+  return data;
+}
+function sortedRows(id,cols,rows,def){const s=sorts[id]||def;if(!s)return rows;const c=cols.find(c=>c.k===s.k);if(!c)return rows;const f=c.sv||(r=>r[c.k]);return rows.slice().sort((a,b)=>{let x=f(a),y=f(b);if(x==null)x=s.d>0?Infinity:-Infinity;if(y==null)y=s.d>0?Infinity:-Infinity;return (x>y?1:x<y?-1:0)*s.d;});}
+function exportXlsx(nome,cols,rows){
+  try{
+    const aoa=[cols.map(c=>c.t.replace(/<[^>]+>/g,''))].concat(rows.map(r=>cols.map(c=>{const v=c.x?c.x(r):r[c.k];return v==null?'':v;})));
+    const ws=XLSX.utils.aoa_to_sheet(aoa);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');
+    const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+    (async()=>{let dl=null;try{dl=window.claude&&await window.claude.use('downloads');}catch(e){}
+      if(!dl){toast('Exportação disponível só no módulo publicado no claude.ai.');return;}
+      try{await dl.save({filename:nome+'.xlsx',data:buf});}catch(e){if(!e||e.code!=='declined')toast('Não foi possível exportar ('+(e&&e.code||'erro')+').');}})();
+  }catch(e){toast('Não foi possível exportar: '+e.message);}
+}
+function mkChart(id,cfg){
+  if(charts[id])charts[id].destroy();
+  const txt=css('--text'),line=css('--line'),mut=css('--muted');
+  Chart.defaults.color=mut;Chart.defaults.borderColor=line;Chart.defaults.font.family='Arial,Helvetica,sans-serif';Chart.defaults.font.size=11;
+  cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{labels:{color:txt,boxWidth:12}}}},cfg.options||{});
+  charts[id]=new Chart(document.getElementById(id),cfg);
+}
+const azul=()=>css('--title')||'#001A72';
+
+/* ---------------- PAINEL ---------------- */
+function chipGroup(sel,attr,cb){
+  const g=$(sel);
+  const act=el=>{g.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===el?'true':'false'));cb(el.dataset[attr]);};
+  g.addEventListener('click',e=>{const c=e.target.closest('.chip');if(c)act(c);});
+  g.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('chip')){e.preventDefault();act(e.target);}});
+}
+/* ---------------- filiais (lojas, CD e outras unidades) ---------------- */
+const LOJAS=[{"num":1,"nome":"Franca","distrito":"SP Interior e MG"},{"num":8,"nome":"Jundiaí","distrito":"SP Interior e MG"},{"num":9,"nome":"Belo Horizonte","distrito":"SP Interior e MG"},{"num":11,"nome":"Limeira","distrito":"SP Interior e MG"},{"num":12,"nome":"Ribeirão Preto","distrito":"SP Interior e MG"},{"num":15,"nome":"Praia Grande","distrito":"Grande São Paulo"},{"num":16,"nome":"Sorocaba","distrito":"SP Interior e MG"},{"num":17,"nome":"Campinas","distrito":"SP Interior e MG"},{"num":19,"nome":"Araraquara","distrito":"SP Interior e MG"},{"num":21,"nome":"Jacareí","distrito":"Grande São Paulo"},{"num":22,"nome":"Presidente Prudente","distrito":"SP Interior e MG"},{"num":23,"nome":"Mogi das Cruzes","distrito":"Grande São Paulo"},{"num":24,"nome":"Guarulhos","distrito":"Grande São Paulo"},{"num":25,"nome":"Marília","distrito":"SP Interior e MG"},{"num":26,"nome":"Barueri","distrito":"Grande São Paulo"},{"num":27,"nome":"Embu das Artes","distrito":"Grande São Paulo"},{"num":28,"nome":"Osasco","distrito":"Grande São Paulo"},{"num":29,"nome":"Piracicaba","distrito":"SP Interior e MG"},{"num":31,"nome":"Interlagos","distrito":"Grande São Paulo"},{"num":32,"nome":"Outlet","distrito":"Grande São Paulo"}];
+const CD_NUM=2;
+const ALIAS={ribeiraoii:12,ribeirao2:12,ribeiraopreto:12,ribeiraopretoii:12,jacarei:21,marilia:25,cajamar:2,cdcajamar:2,cd:2};
+const LOJA_IDX=new Map(LOJAS.map(l=>[norm(l.nome),l.num]));
+function filialNum(nome){const k=norm(String(nome||'').replace(/^\s*(loja|filial)\s+/i,''));if(LOJA_IDX.has(k))return LOJA_IDX.get(k);if(ALIAS[k]!=null)return ALIAS[k];return null;}
+const filialNome=n=>n===CD_NUM?'CD Cajamar':((LOJAS.find(l=>l.num===n)||{}).nome||null);
+const filialDist=n=>n===CD_NUM?'CD':((LOJAS.find(l=>l.num===n)||{}).distrito||'Outras unidades');
+/* chave da filial: loja/CD pelo número; outras unidades pelo nome normalizado */
+const fkey=(nome)=>{const n=filialNum(nome);return n!=null?'F'+n:'U'+norm(nome);};
+const fkNome=(k,raw)=>k[0]==='F'?filialNome(+k.slice(1)):(raw||k.slice(1));
+const fkDist=k=>k[0]==='F'?filialDist(+k.slice(1)):'Outras unidades';
+
+/* ---------------- estado ---------------- */
+/* car = carência: NFs com entrada nos últimos N dias da base ficam fora do cálculo
+   (ainda podem estar em processo de expedição no CD e apareceriam como atraso sem ser). */
+const METAS_PADRAO={lim:3,igual:'etr',mOk:0.5,mMax:0.5,minNF:1,car:15};
+let METAS={...METAS_PADRAO};
+let BASE_ATIVA='embutida';
+let BASE=null,CARGAS=[],ALL=[],CORTE=0,CAR_LIM=Infinity;
+const UNOME=new Map();
+const F={mes:'',ini:null,fim:null,visao:'d',dist:'',fil:'',top:'',sit:''};
+let R=null;
+const charts={},sorts={};
+let pagina='painel';
+const TEM_META=()=>METAS.mOk!=null&&METAS.mMax!=null;
+
+/* ---------------- leitura da exportação ---------------- */
+const COLMAP={idnr:'id',nfserie:'nf',filialorigem:'o',filialdestino:'d',tipooperacao:'top',naturezaoperacao:'nat',logicaestoque:'lg',cfop:'cfop',
+  dataemissaonota:'em',dataemissaonr:'nr',dataetr:'etr',situacaonr:'sit',qtpecas:'q',valortotalitem:'v',usuarioemissaonota:'u',origemnotaseriedestino:'ch'};
+const OBRIG=['id','o','d','em','nr'];
+function xlDate(v){
+  if(v==null||v==='')return null;
+  if(typeof v==='number')return Math.round((v-25569)*DAY);
+  if(v instanceof Date)return Date.UTC(v.getFullYear(),v.getMonth(),v.getDate(),v.getHours(),v.getMinutes(),v.getSeconds());
+  const s=String(v).trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?/);
+  if(m)return Date.UTC(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T]?(\d{2})?:?(\d{2})?:?(\d{2})?/);
+  if(m)return Date.UTC(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  return null;
+}
+function num(v){if(v==null||v==='')return null;if(typeof v==='number')return v;let s=String(v).trim().replace(/\s|R\$/g,'');
+  if(/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))s=s.replace(/\./g,'').replace(',','.');else if(/^-?\d+,\d+$/.test(s))s=s.replace(',','.');const n=Number(s);return isFinite(n)?n:null;}
+function aoaToRecs(aoa){
+  for(let i=0;i<Math.min(8,aoa.length);i++){
+    const h=(aoa[i]||[]).map(x=>COLMAP[norm(x)]||null);
+    if(OBRIG.every(k=>h.includes(k))){
+      const out=[];let ign=0;
+      for(const r of aoa.slice(i+1)){
+        const o={};h.forEach((k,j)=>{if(k){const v=r[j];o[k]=v==null?null:(typeof v==='string'?v.trim():v);}});
+        o.id=parseInt(String(o.id??'').replace(/\D/g,''),10);
+        o.em=xlDate(o.em);o.nr=xlDate(o.nr);o.etr=xlDate(o.etr);
+        if(!isFinite(o.id)||o.em==null||o.nr==null||!o.o||!o.d){ign++;continue;}
+        o.nr=dkey(o.nr)*DAY;if(o.etr!=null)o.etr=dkey(o.etr)*DAY;
+        o.q=num(o.q);o.v=num(o.v);o.cfop=o.cfop==null?null:String(o.cfop).replace(/\.0+$/,'');
+        ['nf','o','d','top','nat','lg','sit','u','ch'].forEach(k=>{if(o[k]!=null)o[k]=String(o[k]);});
+        out.push(o);
+      }
+      out.ignoradas=ign;return out;
+    }
+  }
+  return null;
+}
+async function lerArquivo(f){
+  const buf=await f.arrayBuffer();
+  if(/\.csv$|\.txt$/i.test(f.name))return aoaToRecs(parseCSV(decodeTexto(buf)));
+  const wb=XLSX.read(buf,{type:'array',cellDates:false,dense:true});
+  for(const n of wb.SheetNames){const aoa=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null,blankrows:false});const r=aoaToRecs(aoa);if(r&&r.length)return r;}
+  return null;
+}
+function baseEmbutida(p){
+  const c=p.cols,D=p.dic,out=[];
+  for(let i=0;i<p.n;i++){const g=k=>c[k][i];const s=k=>c[k][i]==null?null:D[k][c[k][i]];
+    out.push({id:g('id'),nf:g('nf'),o:s('o'),d:s('d'),top:s('top'),nat:s('nat'),lg:s('lg'),cfop:g('cfop')==null?null:String(g('cfop')),em:g('em'),nr:g('nr'),etr:g('etr'),sit:s('sit'),q:g('q'),v:g('v'),u:s('u'),ch:g('ch')});}
+  return out;
+}
+
+/* ---------------- regra do cálculo ---------------- */
+/* Dias até a entrada = Data Emissão NR − (Data ETR, se existir e for anterior à NR; senão Data Emissão Nota).
+   Arredondado para inteiro; negativo vira 0 (NF emitida com horário e NR no mesmo dia). */
+function derive(r){
+  const o={...r};
+  const nrD=dkey(r.nr),etD=r.etr!=null?dkey(r.etr):null;
+  o.dia=nrD;
+  const usaEtr=etD!=null&&(etD<nrD||(etD===nrD&&METAS.igual==='etr'));
+  if(usaEtr){o.base='ETR';o.bruto=nrD-etD;}
+  else{o.base=etD==null?'Emissão (sem ETR)':(etD>nrD?'Emissão (ETR após a NR)':'Emissão (ETR = NR)');o.bruto=(r.nr-r.em)/DAY;}
+  o.neg=o.bruto<0;
+  o.dias=Math.max(0,Math.round(o.bruto));
+  o.atr=o.dias>METAS.lim;
+  o.ko=fkey(r.o);o.kd=fkey(r.d);
+  if(!UNOME.has(o.ko))UNOME.set(o.ko,r.o);if(!UNOME.has(o.kd))UNOME.set(o.kd,r.d);
+  return o;
+}
+const nomeK=k=>fkNome(k,UNOME.get(k));
+
+/* ---------------- base e cargas ---------------- */
+let RAW=[];
+function rebuild(){
+  CARGAS.sort((a,b)=>((a.quando||0)-(b.quando||0))||String(a.key).localeCompare(String(b.key),undefined,{numeric:true}));
+  let iS=-1;CARGAS.forEach((c,i)=>{if(c.modo==='substituir'&&(c.rows||[]).length)iS=i;});
+  const m=new Map();if(iS<0)BASE.forEach(r=>m.set(r.id,r));
+  CARGAS.forEach((c,i)=>{if(i>=iS)(c.rows||[]).forEach(r=>m.set(r.id,r));});
+  BASE_ATIVA=iS<0?'embutida':CARGAS[iS].nome;
+  RAW=[...m.values()];
+  derivar();
+  const n=CARGAS.length,sub=iS>=0;
+  $('#hdDb').className='pill '+(n?'ok':'warn');
+  $('#hdDbTxt').textContent=sub?('Base substituída em '+fD(dkey(CARGAS[iS].quando))+' · '+n+(n>1?' cargas':' carga')):n?('Base embutida + '+n+(n>1?' cargas':' carga')+(SDB?' compartilhada'+(n>1?'s':''):' neste navegador')):'Base embutida de 10/11/2026';
+}
+function derivar(){
+  ALL=RAW.filter(r=>norm(r.sit)!=='cancelada').map(derive).sort((a,b)=>a.nr-b.nr);
+  CORTE=0;ALL.forEach(r=>{if(r.nr>CORTE)CORTE=r.nr;});
+  CAR_LIM=CORTE&&METAS.car>0?dkey(CORTE)-METAS.car:Infinity;   /* último dia de entrada que entra no cálculo */
+  $('#hdUltima').textContent=CORTE?fD(dkey(CORTE))+(METAS.car>0?' · cálculo até '+fD(CAR_LIM)+' (últimos '+METAS.car+' dias fora)':''):'—';
+}
+
+/* ---------------- cálculo ---------------- */
+const kVis=r=>F.visao==='d'?r.kd:r.ko;
+function passF(r){
+  if(r.dia>CAR_LIM)return false;
+  if(r.dia<F.ini||r.dia>F.fim)return false;
+  const k=kVis(r);
+  if(F.dist&&fkDist(k)!==F.dist)return false;
+  if(F.fil&&k!==F.fil)return false;
+  if(F.top&&r.top!==F.top)return false;
+  if(F.sit&&r.sit!==F.sit)return false;
+  return true;
+}
+function agg(rows){
+  const a={n:0,atr:0,dias:[],soma:0,v:0,vAtr:0,q:0,max:0,b0:0,b13:0,b47:0,b815:0,b16:0,emi:0,neg:0};
+  rows.forEach(r=>{a.n++;if(r.atr){a.atr++;a.vAtr+=r.v||0;}a.dias.push(r.dias);a.soma+=r.dias;a.v+=r.v||0;a.q+=r.q||0;if(r.dias>a.max)a.max=r.dias;
+    if(r.dias===0)a.b0++;else if(r.dias<=3)a.b13++;else if(r.dias<=7)a.b47++;else if(r.dias<=15)a.b815++;else a.b16++;
+    if(r.base!=='ETR')a.emi++;if(r.neg)a.neg++;});
+  a.pct=a.n?a.atr/a.n:null;a.med=a.n?a.soma/a.n:null;a.mediana=median(a.dias);a.dias=null;
+  return a;
+}
+function score(a){
+  if(!TEM_META()||a.n<(METAS.minNF||1)||a.pct==null)return null;
+  const p=a.pct*100;
+  if(p<=METAS.mOk)return 100;
+  if(p>METAS.mMax)return 0;
+  return 50;
+}
+const clsOf=(a,sc)=>!TEM_META()?'Meta a definir':a.n<(METAS.minNF||1)?'Poucas NFs':sc===100?'Gabarito!':sc===50?'Boa':'Crítica';
+const clsTag=a=>{const sc=a.score;if(sc==null)return '<span class="cls p">'+clsOf(a,sc)+'</span>';return '<span class="cls '+(sc===100?'g':sc===50?'b':'c')+'">'+clsOf(a,sc)+'</span>';};
+function tonePct(p){if(p==null||!TEM_META())return '';const x=p*100;return x<=METAS.mOk?'ok':x>METAS.mMax?'bad':'mid';}
+function recalc(){
+  const rows=ALL.filter(passF);
+  const por=new Map();rows.forEach(r=>{const k=kVis(r);if(!por.has(k))por.set(k,[]);por.get(k).push(r);});
+  const fil=[...por.entries()].map(([k,rs])=>{const a=agg(rs);a.k=k;a.nome=nomeK(k);a.dist=fkDist(k);a.score=score(a);a.cls=clsOf(a,a.score);return a;});
+  R={rows,fil,rede:agg(rows)};
+}
+
+/* ---------------- filtros ---------------- */
+function setupFilters(){
+  const dC=dkey(CORTE);
+  const anos=[...new Set(ALL.map(r=>dDate(r.dia).getUTCFullYear()))].sort((a,b)=>b-a);
+  const meses=[...new Set(ALL.map(r=>mkOf(r.dia)))].sort((a,b)=>b-a);
+  $('#fMes').innerHTML=anos.map(y=>`<option value="a${y}">Ano ${y}</option>`).join('')+'<option value="u30">Últimos 30 dias</option><option value="u90">Últimos 90 dias</option><option value="tudo">Base inteira</option>'+
+    '<optgroup label="Mês da entrada">'+meses.map(m=>`<option value="m${m}">${mkLabel(m)}</option>`).join('')+'</optgroup><option value="livre">Período livre</option>';
+  if(!F.mes||![...$('#fMes').options].some(o=>o.value===F.mes))F.mes=anos.length?'a'+anos[0]:'tudo';
+  const d0=ALL.length?ALL[0].dia:dC;
+  ['#fIni','#fFim'].forEach(s=>{$(s).min=isoD(d0);$(s).max=isoD(dC);});
+  const ks=new Set();ALL.forEach(r=>{ks.add(r.ko);ks.add(r.kd);});
+  const dists=[...new Set([...ks].map(fkDist))].sort((a,b)=>(a==='Outras unidades')-(b==='Outras unidades')||a.localeCompare(b));
+  $('#fDist').innerHTML='<option value="">Todos</option>'+dists.map(d=>`<option>${esc(d)}</option>`).join('');$('#fDist').value=F.dist;
+  fillFiliais(ks);
+  const tops=topBy(ALL,r=>r.top,20);$('#fTop').innerHTML='<option value="">Todos</option>'+tops.map(([t])=>`<option>${esc(t)}</option>`).join('');if(F.top&&!tops.some(([t])=>t===F.top))F.top='';$('#fTop').value=F.top;
+  const sits=topBy(ALL,r=>r.sit,10);$('#fSit').innerHTML='<option value="">Todas</option>'+sits.map(([t,n])=>`<option value="${esc(t)}">${esc(t)} (${fN(n)})</option>`).join('');if(F.sit&&!sits.some(([t])=>t===F.sit))F.sit='';$('#fSit').value=F.sit;
+  $('#fVisao').value=F.visao;
+  applyMes();$('#fMes').value=F.mes;
+}
+function fillFiliais(ks){
+  if(!ks){ks=new Set();ALL.forEach(r=>{ks.add(r.ko);ks.add(r.kd);});}
+  const ls=[...ks].filter(k=>!F.dist||fkDist(k)===F.dist).map(k=>[k,nomeK(k)]).sort((a,b)=>a[1].localeCompare(b[1]));
+  $('#fFil').innerHTML='<option value="">Todas</option>'+ls.map(([k,n])=>`<option value="${esc(k)}">${esc(n)}</option>`).join('');
+  if(F.fil&&!ls.some(([k])=>k===F.fil))F.fil='';$('#fFil').value=F.fil;
+}
+function applyMes(){
+  const dC=dkey(CORTE),d0=ALL.length?ALL[0].dia:dC,v=F.mes;
+  if(v==='u30'){F.ini=dC-29;F.fim=dC;}
+  else if(v==='u90'){F.ini=dC-89;F.fim=dC;}
+  else if(v==='tudo'){F.ini=d0;F.fim=dC;}
+  else if(v[0]==='a'){const y=+v.slice(1);F.ini=Date.UTC(y,0,1)/DAY;F.fim=Math.min(Date.UTC(y,11,31)/DAY,dC);}
+  else if(v[0]==='m'){const mk=+v.slice(1),y=Math.floor(mk/12),m=mk%12;F.ini=Date.UTC(y,m,1)/DAY;F.fim=Math.min(Date.UTC(y,m+1,0)/DAY,dC);}
+  else if(F.ini==null){F.ini=d0;F.fim=dC;}
+  $('#fIni').value=isoD(F.ini);$('#fFim').value=isoD(F.fim);
+}
+const perTxt=()=>fD(F.ini)+(F.fim!==F.ini?' a '+fD(F.fim):'');
+const visTxt=()=>F.visao==='d'?'filial de destino (quem dá entrada)':'filial de origem (quem envia)';
+function bindFilters(){
+  $('#fMes').onchange=e=>{F.mes=e.target.value;applyMes();refresh();};
+  $('#fIni').onchange=e=>{const d=fromIso(e.target.value);if(d==null)return;F.ini=d;if(F.ini>F.fim){F.fim=F.ini;$('#fFim').value=isoD(F.fim);}F.mes='livre';$('#fMes').value='livre';refresh();};
+  $('#fFim').onchange=e=>{const d=fromIso(e.target.value);if(d==null)return;F.fim=d;if(F.fim<F.ini){F.ini=F.fim;$('#fIni').value=isoD(F.ini);}F.mes='livre';$('#fMes').value='livre';refresh();};
+  $('#fVisao').onchange=e=>{F.visao=e.target.value;F.fil='';fillFiliais();refresh();};
+  $('#fDist').onchange=e=>{F.dist=e.target.value;fillFiliais();refresh();};
+  $('#fFil').onchange=e=>{F.fil=e.target.value;refresh();};
+  $('#fTop').onchange=e=>{F.top=e.target.value;refresh();};
+  $('#fSit').onchange=e=>{F.sit=e.target.value;refresh();};
+  $('#fLimpar').onclick=()=>{Object.assign(F,{visao:'d',dist:'',fil:'',top:'',sit:'',mes:''});setupFilters();refresh();};
+}
+function topBy(rows,kf,n=3){const m=new Map();rows.forEach(r=>{const k=kf(r);if(k==null||k==='')return;m.set(k,(m.get(k)||0)+1);});return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);}
+
+/* ---------------- colunas de NF ---------------- */
+const fDHm=t=>t==null?'—':fDH(t);
+const COLS_NF=[
+  {k:'id',t:'Id NR',n:1},
+  {k:'nf',t:'NF/Série'},
+  {k:'o',t:'Origem',f:r=>esc(nomeK(r.ko)),x:r=>nomeK(r.ko)},
+  {k:'d',t:'Destino',f:r=>esc(nomeK(r.kd)),x:r=>nomeK(r.kd)},
+  {k:'em',t:'Emissão da NF',f:r=>fDHm(r.em),x:r=>fDHm(r.em)},
+  {k:'etr',t:'ETR',f:r=>r.etr==null?'—':fD(dkey(r.etr)),x:r=>r.etr==null?'':fD(dkey(r.etr))},
+  {k:'nr',t:'Entrada (NR)',f:r=>fD(r.dia),x:r=>fD(r.dia),sv:r=>r.dia},
+  {k:'base',t:'Base do cálculo',f:r=>r.base==='ETR'?'ETR':'<span class="tag warn">'+esc(r.base)+'</span>',x:r=>r.base},
+  {k:'dias',t:'Dias',n:1,tip:'Dias até a entrada, arredondados; negativo vira 0',f:r=>`<b class="${r.atr?'res-err':''}">${fN(r.dias)}</b>`,x:r=>r.dias},
+  {k:'sit',t:'Situação NR'},
+  {k:'q',t:'Peças',n:1,f:r=>fN(r.q),x:r=>r.q},
+  {k:'v',t:'Valor (R$)',n:1,f:r=>r.v==null?'—':nf2.format(r.v),x:r=>r.v},
+  {k:'top',t:'Tipo de operação'},
+  {k:'u',t:'Emitida por'}];
+const nf2=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fR=v=>v==null?'—':'R$ '+nf0.format(Math.round(v));
+const fRc=v=>{if(v==null)return '—';const a=Math.abs(v);if(a>=1e6)return 'R$ '+nf2.format(a/1e6)+' mi';if(a>=1e3)return 'R$ '+nf0.format(a/1e3)+' mil';return 'R$ '+nf0.format(a);};
+
+/* ---------------- PAINEL ---------------- */
+function renderPainel(){
+  const a=R.rede,M=METAS,L=R.fil;
+  const k=(t,v,cls,s,badge)=>`<div class="kpi">${badge?`<span class="badge">${badge}</span>`:''}<div class="k">${t}</div><div class="v ${cls||''}">${v}</div><div class="s">${s||''}</div></div>`;
+  const cri=L.filter(l=>l.score===0);
+  const pior=L.slice().sort((x,y)=>y.atr-x.atr)[0];
+  const tp=tonePct(a.pct);
+  $('#kpis').innerHTML=
+    k('NFs com entrada no período',fN(a.n),'',`${fRc(a.v)} em mercadoria · ${fN(a.q)} peças<br>Entradas de ${perTxt()}`)+
+    k(`Em atraso (mais de ${M.lim} dias)`,fN(a.atr),a.atr?'neg':'pos',`<b>${fP(a.pct)}</b> das NFs${TEM_META()?' · meta até '+nf1.format(M.mOk)+'%':''}`,TEM_META()?'meta':'')+
+    k('Tempo até a entrada',a.med==null?'—':nf1.format(a.med)+' dias',a.med!=null&&a.med>M.lim?'neg':'',`média · mediana de <b>${a.mediana==null?'—':fN(a.mediana)}</b> dia(s) · maior: ${fN(a.max)} dias`)+
+    k('Valor das NFs em atraso',fRc(a.vAtr),a.vAtr?'neg':'pos',`${fP(a.v?a.vAtr/a.v:null)} do valor que deu entrada`)+
+    (TEM_META()?k('Filiais críticas',fN(cri.length),cri.length?'neg':'pos',cri.length?cri.slice(0,4).map(l=>esc(l.nome)).join(', ')+(cri.length>4?'…':''):'Nenhuma filial acima do máximo','UTI')
+      :k('Filial com mais atrasos',pior?esc(pior.nome):'—','',pior?`<b>${fN(pior.atr)}</b> NFs (${fP(pior.pct)} das dela)`:'',F.visao==='d'?'destino':'origem'));
+  const im=(t,v)=>`<div><span class="k">${t}</span><span class="v">${v}</span></div>`;
+  $('#impact').innerHTML=im('Entrada no mesmo dia (0)',fN(a.b0)+' <small>'+fP(a.n?a.b0/a.n:null,0)+'</small>')+im('1 a 3 dias',fN(a.b13)+' <small>'+fP(a.n?a.b13/a.n:null,0)+'</small>')+
+    im('4 a 7 dias',fN(a.b47)+' <small>'+fP(a.n?a.b47/a.n:null,0)+'</small>')+im('8 a 15 dias',fN(a.b815))+im('Mais de 15 dias',fN(a.b16));
+  renderInsights();
+  const cols=[
+    {k:'pos',t:'#',n:1,f:(r,i)=>i+1,sv:r=>0},
+    {k:'dist',t:'Distrito'},
+    {k:'nome',t:F.visao==='d'?'Filial de destino':'Filial de origem',f:r=>`<b>${esc(r.nome)}</b>`},
+    {k:'n',t:'NFs com entrada',n:1},
+    {k:'atr',t:'Em atraso',n:1},
+    {k:'pct',t:'% em atraso',n:1,f:r=>fP(r.pct),cl:r=>tonePct(r.pct),x:r=>r.pct},
+    {k:'med',t:'Média (dias)',n:1,f:r=>r.med==null?'—':nf1.format(r.med),x:r=>r.med},
+    {k:'mediana',t:'Mediana',n:1},
+    {k:'max',t:'Maior',n:1},
+    {k:'vAtr',t:'Valor em atraso',n:1,f:r=>fR(r.vAtr),x:r=>r.vAtr},
+    {k:'cls',t:'Classificação',f:r=>clsTag(r),sv:r=>r.score==null?-1:r.score}];
+  table('#tbRank',cols,L,{sort:{k:'atr',d:-1},click:l=>abrirFilial(l),
+    total:{nome:'<b>Rede</b>',n:fN(a.n),atr:fN(a.atr),pct:fP(a.pct),med:a.med==null?'—':nf1.format(a.med),mediana:fN(a.mediana),max:fN(a.max),vAtr:fR(a.vAtr)},vazio:'Nenhuma NF no filtro. Amplie o período ou limpe os filtros.'});
+  $('#expRank').onclick=()=>exportXlsx('NFs_ranking_filiais',cols.filter(c=>c.k!=='pos'),sortedRows('#tbRank',cols,L,{k:'atr',d:-1}));
+  $('#thr').innerHTML=TEM_META()?`<div><b>% em atraso</b> · NFs com mais de ${M.lim} dias até a entrada ÷ NFs com entrada<br><span class="res-ok">até ${nf1.format(M.mOk)}%</span> é Gabarito!${M.mMax>M.mOk?` · <span class="res-warn">${nf1.format(M.mOk)}% a ${nf1.format(M.mMax)}%</span> é Boa`:''} · <span class="res-err">acima de ${nf1.format(M.mMax)}%</span> é Crítica</div>`
+    :`<div><b>Classificação sem meta.</b> A regra de atraso (${M.lim} dias) já está valendo. Para classificar as filiais em Gabarito!, Boa e Crítica, defina em Atualizar dados a meta e o máximo de % de NFs em atraso.</div>`;
+  renderChFil();
+  // distribuição
+  const B=[['0',a.b0],['1–3',a.b13],['4–7',a.b47],['8–15',a.b815],['16+',a.b16]];
+  mkChart('chDist',{type:'bar',data:{labels:B.map(b=>b[0]+' dias'),datasets:[{label:'NFs',data:B.map(b=>b[1]),backgroundColor:B.map((b,i)=>i<2?(i===0?'#16A34A':'#F59E0B'):'#C00000')}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{precision:0}}}}});
+  // tipo de operação
+  const tops=new Map();R.rows.forEach(r=>{const t=r.top||'—';if(!tops.has(t))tops.set(t,[]);tops.get(t).push(r);});
+  const T=[...tops.entries()].map(([t,rs])=>{const x=agg(rs);x.t=t;return x;});
+  table('#tbTop',[{k:'t',t:'Tipo de operação'},{k:'n',t:'NFs',n:1},{k:'atr',t:'Em atraso',n:1},{k:'pct',t:'% em atraso',n:1,f:r=>fP(r.pct),cl:r=>tonePct(r.pct)},{k:'med',t:'Média (dias)',n:1,f:r=>r.med==null?'—':nf1.format(r.med)}],T,{sort:{k:'n',d:-1}});
+}
+let filModo='pct';
+function renderChFil(){
+  const M=METAS,L=R.fil.slice();
+  if(filModo==='atr'){const Ls=L.sort((x,y)=>y.atr-x.atr);
+    $('#lgFil').innerHTML='<span><i style="background:#C00000"></i>em atraso</span><span><i style="background:#94A3B8"></i>dentro do prazo</span>';
+    mkChart('chFil',{type:'bar',data:{labels:Ls.map(l=>l.nome),datasets:[{label:'Em atraso',data:Ls.map(l=>l.atr),backgroundColor:'#C00000'},{label:'Dentro do prazo',data:Ls.map(l=>l.n-l.atr),backgroundColor:'#94A3B8'}]},
+      options:{scales:{x:{stacked:true},y:{stacked:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});return;}
+  if(filModo==='med'){const Ls=L.filter(l=>l.med!=null).sort((x,y)=>y.med-x.med);
+    $('#lgFil').innerHTML=`<span><i style="background:#FE5000"></i>média de dias até a entrada</span><span><i style="background:transparent;border-top:2px dashed #C00000;height:0;"></i>limite de ${M.lim} dias</span>`;
+    mkChart('chFil',{type:'bar',data:{labels:Ls.map(l=>l.nome),datasets:[{label:'Média (dias)',data:Ls.map(l=>l.med),backgroundColor:'#FE5000',order:2},{type:'line',label:'Limite',data:Ls.map(()=>M.lim),borderColor:'#C00000',borderDash:[3,3],pointRadius:0,borderWidth:1.5,order:1}]},
+      options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+nf1.format(c.raw)+' dias'}}}}});return;}
+  const Ls=L.filter(l=>l.pct!=null).sort((x,y)=>y.pct-x.pct);
+  const cor=l=>{if(!TEM_META())return '#FE5000';if(l.n<(M.minNF||1))return '#CBD5E1';const p=l.pct*100;return p<=M.mOk?'#16A34A':p>M.mMax?'#C00000':'#F59E0B';};
+  const ds=[{label:'% em atraso',data:Ls.map(l=>l.pct),backgroundColor:Ls.map(cor),order:2,_b:Ls.map(l=>l.n)}];
+  if(TEM_META()){ds.push({type:'line',label:'Meta '+nf1.format(M.mOk)+'%',data:Ls.map(()=>M.mOk/100),borderColor:azul(),borderDash:[6,4],pointRadius:0,borderWidth:1.5,order:1});
+    ds.push({type:'line',label:'Máximo '+nf1.format(M.mMax)+'%',data:Ls.map(()=>M.mMax/100),borderColor:'#C00000',borderDash:[3,3],pointRadius:0,borderWidth:1.5,order:1});}
+  $('#lgFil').innerHTML=TEM_META()?'<span><i style="background:#16A34A"></i>dentro da meta</span><span><i style="background:#F59E0B"></i>entre a meta e o máximo</span><span><i style="background:#C00000"></i>acima do máximo</span><span><i style="background:#CBD5E1"></i>poucas NFs</span>'
+    :'<span><i style="background:#FE5000"></i>% de NFs com mais de '+M.lim+' dias até a entrada</span><span>Defina a meta em Atualizar dados para colorir por faixa.</span>';
+  mkChart('chFil',{type:'bar',data:{labels:Ls.map(l=>l.nome),datasets:ds},
+    options:{scales:{y:{min:0,ticks:{callback:v=>fP(v,0)}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fP(c.raw)+(c.dataset._b?' ('+fN(c.dataset._b[c.dataIndex])+' NFs)':'')}}}}});
+}
+function renderInsights(){
+  const a=R.rede,L=R.fil,M=METAS,out=[],rows=R.rows;
+  if(!a.n){$('#insights').innerHTML='<div class="insight">Nenhuma NF no filtro. Amplie o período ou limpe os filtros.</div>';return;}
+  out.push(['blue','Fotografia do período',`De ${perTxt()}, <b>${fN(a.n)}</b> NFs deram entrada. <b>${fN(a.atr)}</b> (${fP(a.pct)}) levaram mais de ${M.lim} dias, somando <b>${fRc(a.vAtr)}</b>. Metade das NFs entrou em até <b>${fN(a.mediana)}</b> dia(s).`]);
+  const Ls=L.filter(l=>l.atr>0).sort((x,y)=>y.atr-x.atr);
+  if(Ls.length){const t3=Ls.slice(0,3),s=t3.reduce((x,l)=>x+l.atr,0);
+    out.push(['red','Onde o atraso se concentra',`${t3.map(l=>`<b>${esc(l.nome)}</b> (${fN(l.atr)}, ${fP(l.pct,0)} das dela)`).join(', ')} somam <b>${fP(s/a.atr,0)}</b> das NFs em atraso, vistas pela ${visTxt()}.`]);}
+  const pares=new Map();rows.forEach(r=>{if(!r.atr)return;const k=r.ko+'>'+r.kd;pares.set(k,(pares.get(k)||0)+1);});
+  const pt=[...pares.entries()].sort((x,y)=>y[1]-x[1]).slice(0,2);
+  if(pt.length)out.push(['','Rotas com mais atraso',pt.map(([k,n])=>{const [o,d]=k.split('>');return `<b>${esc(nomeK(o))} → ${esc(nomeK(d))}</b> (${fN(n)})`;}).join(' e ')+'. Veja todas as rotas na aba Rotas.']);
+  const ms=[...new Set(rows.map(r=>mkOf(r.dia)))].sort((x,y)=>x-y);
+  if(ms.length>=3){const ult=ms[ms.length-1],ant=ms.slice(0,-1);const pU=agg(rows.filter(r=>mkOf(r.dia)===ult)).pct;const pA=agg(rows.filter(r=>mkOf(r.dia)!==ult)).pct;
+    const parcial=dkey(CORTE)<Date.UTC(Math.floor(ult/12),ult%12+1,0)/DAY;
+    out.push([pU>pA?'red':'green',`${mkLabel(ult)}${parcial?' (mês em andamento)':''}`,`${fP(pU)} das NFs em atraso, contra ${fP(pA)} nos ${ant.length} meses anteriores do filtro.${parcial?' Parte das NFs emitidas no fim do mês ainda não deu entrada, então o número pode mudar.':''}`]);}
+  const emi=rows.filter(r=>r.base!=='ETR');
+  if(emi.length){const sem=emi.filter(r=>r.base==='Emissão (sem ETR)').length,depois=emi.filter(r=>r.base==='Emissão (ETR após a NR)').length,ig=emi.filter(r=>r.base==='Emissão (ETR = NR)').length;
+    out.push(['','Base do cálculo',`<b>${fN(a.n-emi.length)}</b> NFs foram medidas pela data ETR e <b>${fN(emi.length)}</b> pela emissão da nota: ${fN(sem)} sem ETR, ${fN(depois)} com ETR depois da entrada${ig?', '+fN(ig)+' com ETR no mesmo dia da entrada':''}. Destas, <b>${fN(emi.filter(r=>r.atr).length)}</b> estão em atraso.`]);}
+  if(a.neg)out.push(['','Valores negativos zerados',`<b>${fN(a.neg)}</b> NFs deram entrada no mesmo dia da emissão e o cálculo ficou negativo, porque a emissão tem horário e a NR não. Elas contam como 0 dia.`]);
+  if(!TEM_META())out.push(['','Meta a definir','A regra de atraso já está valendo, mas falta a meta de % de NFs em atraso por filial para classificar em Gabarito!, Boa e Crítica. Defina em Atualizar dados.']);
+  else{const cri=L.filter(l=>l.score===0);if(cri.length)out.push(['red','Filiais na UTI',cri.map(l=>`<b>${esc(l.nome)}</b> (${fP(l.pct,0)})`).join(', ')+` passaram do máximo de ${nf1.format(M.mMax)}% de NFs em atraso.`]);}
+  $('#insights').innerHTML=out.map(([c,t,x])=>`<div class="insight ${c}"><h5>${t}</h5>${x}</div>`).join('');
+}
+
+/* ---------------- detalhe ---------------- */
+let MODAL=null;
+function abrirLista(titulo,sub,rows){
+  MODAL={titulo,rows};
+  $('#mdDetT').textContent=titulo;$('#mdDetS').textContent=sub;
+  const a=agg(rows);
+  $('#mdDetK').innerHTML=[['NFs',fN(a.n)],['Em atraso',fN(a.atr)+' ('+fP(a.pct)+')'],['Média',a.med==null?'—':nf1.format(a.med)+' dias'],['Valor em atraso',fR(a.vAtr)]].map(([k,v])=>`<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  $('#mdDetN').textContent=fN(rows.length)+' NFs, das mais demoradas para as mais rápidas.';
+  table('#mdDetTb',COLS_NF,rows,{sort:{k:'dias',d:-1},limit:500});
+  $('#mdDet').hidden=false;
+}
+function abrirFilial(l){abrirLista(l.nome,(F.visao==='d'?'Como destino':'Como origem')+' · '+perTxt(),R.rows.filter(r=>kVis(r)===l.k));}
+function exportModal(){if(MODAL)exportXlsx('NFs_'+MODAL.titulo.replace(/\W+/g,'_'),COLS_NF,MODAL.rows);}
+
+/* ---------------- MENSAL ---------------- */
+let heatModo='atr';
+function renderMensal(){
+  const M=METAS;
+  const keys=[];for(let m=mkOf(F.ini);m<=mkOf(F.fim);m++)keys.push(m);
+  const por=new Map(keys.map(k=>[k,[]]));R.rows.forEach(r=>{const k=mkOf(r.dia);if(por.has(k))por.get(k).push(r);});
+  const A=keys.map(k=>{const a=agg(por.get(k));a.k=k;return a;});
+  mkChart('chMes',{type:'bar',data:{labels:A.map(a=>mkShort(a.k)),datasets:[
+    {label:'Até '+M.lim+' dias',data:A.map(a=>a.n-a.atr),backgroundColor:'#94A3B8',stack:'s',yAxisID:'y',order:2},
+    {label:'Mais de '+M.lim+' dias',data:A.map(a=>a.atr),backgroundColor:'#C00000',stack:'s',yAxisID:'y',order:2},
+    {type:'line',label:'% em atraso',data:A.map(a=>a.pct),borderColor:'#FE5000',backgroundColor:'#FE5000',yAxisID:'y1',tension:.25,pointRadius:3,order:1,spanGaps:true}]},
+    options:{scales:{y:{stacked:true,ticks:{precision:0}},y1:{position:'right',min:0,grid:{drawOnChartArea:false},ticks:{callback:v=>fP(v,0)}},x:{stacked:true}},
+      plugins:{tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y1'?'% em atraso: '+fP(c.raw):c.dataset.label+': '+fN(c.raw)}}}}});
+  const cols=[{k:'k',t:'Mês da entrada',f:r=>mkLabel(r.k),x:r=>mkLabel(r.k)},{k:'n',t:'NFs com entrada',n:1},{k:'atr',t:'Em atraso',n:1},{k:'pct',t:'% em atraso',n:1,f:r=>fP(r.pct),cl:r=>tonePct(r.pct),x:r=>r.pct},
+    {k:'med',t:'Média (dias)',n:1,f:r=>r.med==null?'—':nf1.format(r.med),x:r=>r.med},{k:'mediana',t:'Mediana',n:1},{k:'max',t:'Maior',n:1},{k:'vAtr',t:'Valor em atraso',n:1,f:r=>fR(r.vAtr),x:r=>r.vAtr}];
+  const T=A.slice().reverse();
+  table('#tbMes',cols,T,{total:{k:'<b>Período</b>',n:fN(R.rede.n),atr:fN(R.rede.atr),pct:fP(R.rede.pct),med:R.rede.med==null?'—':nf1.format(R.rede.med),mediana:fN(R.rede.mediana),max:fN(R.rede.max),vAtr:fR(R.rede.vAtr)}});
+  $('#expMes').onclick=()=>exportXlsx('NFs_por_mes',cols,T);
+  renderMatriz(keys);
+}
+function renderMatriz(keys){
+  const M=METAS;
+  const idx=new Map();R.rows.forEach(r=>{const k=kVis(r)+'|'+mkOf(r.dia);if(!idx.has(k))idx.set(k,{n:0,atr:0});const x=idx.get(k);x.n++;if(r.atr)x.atr++;});
+  const fil=R.fil.slice().sort((a,b)=>b.atr-a.atr||a.nome.localeCompare(b.nome));
+  const val=x=>!x?null:heatModo==='atr'?x.atr:heatModo==='n'?x.n:(x.n?x.atr/x.n:null);
+  const txt=v=>v==null?'':heatModo==='pct'?fP(v,0):fN(v);
+  const mx=Math.max(1,...fil.flatMap(f=>keys.map(k=>{const x=idx.get(f.k+'|'+k);return x?(heatModo==='n'?x.n:x.atr):0;})));
+  const bg=(x)=>{const v=val(x);if(v==null)return 'background:var(--surface-2);color:var(--muted)';
+    if(heatModo==='pct'){if(TEM_META()){const p=v*100;return p<=M.mOk?'background:#16A34A;color:#fff':p>M.mMax?'background:#C00000;color:#fff':'background:#F59E0B;color:#1E293B';}
+      const a=Math.min(1,v/0.3);return `background:rgba(192,0,0,${(.1+a*.85).toFixed(2)});color:${a>.5?'#fff':'var(--text)'}`;}
+    if(v===0)return 'background:rgba(22,163,74,.18);color:var(--text)';
+    const p=v/mx,base=heatModo==='n'?'254,80,0':'192,0,0';return `background:rgba(${base},${(.12+p*.8).toFixed(2)});color:${p>.5?'#fff':'var(--text)'}`;};
+  let h='<thead><tr><th class="lj">'+(F.visao==='d'?'Destino':'Origem')+'</th>'+keys.map(k=>`<th>${mkShort(k)}</th>`).join('')+'<th>Total</th></tr></thead><tbody>';
+  h+=fil.map(f=>'<tr><th class="lj">'+esc(f.nome)+'</th>'+keys.map(k=>{const x=idx.get(f.k+'|'+k);return `<td style="${bg(x)}" title="${esc(f.nome)} · ${mkLabel(k)}: ${x?fN(x.atr)+' de '+fN(x.n)+' NFs em atraso':'sem NF'}">${txt(val(x))}</td>`;}).join('')+
+    `<td style="font-weight:bold">${heatModo==='pct'?fP(f.pct,0):fN(heatModo==='n'?f.n:f.atr)}</td></tr>`).join('');
+  const tot=keys.map(k=>{let n=0,a=0;fil.forEach(f=>{const x=idx.get(f.k+'|'+k);if(x){n+=x.n;a+=x.atr;}});return {n,atr:a};});
+  h+='<tr class="tot"><th class="lj">Rede</th>'+tot.map(x=>`<td style="font-weight:bold">${heatModo==='pct'?fP(x.n?x.atr/x.n:null,0):fN(heatModo==='n'?x.n:x.atr)}</td>`).join('')+`<td style="font-weight:bold">${heatModo==='pct'?fP(R.rede.pct,0):fN(heatModo==='n'?R.rede.n:R.rede.atr)}</td></tr>`;
+  if(!fil.length)h+='<tr><td class="note">Nenhuma filial no filtro.</td></tr>';
+  $('#tbHeat').innerHTML=h+'</tbody>';
+  $('#lgHeat').innerHTML=(heatModo==='pct'?(TEM_META()?'<span><i style="background:#16A34A"></i>dentro da meta</span><span><i style="background:#F59E0B"></i>entre a meta e o máximo</span><span><i style="background:#C00000"></i>acima do máximo</span>':'<span><i style="background:rgba(192,0,0,.2)"></i>pouco atraso</span><span><i style="background:rgba(192,0,0,.9)"></i>30% ou mais em atraso</span>')
+    :heatModo==='n'?'<span><i style="background:rgba(254,80,0,.2)"></i>poucas NFs</span><span><i style="background:rgba(254,80,0,.9)"></i>muitas NFs</span>':'<span><i style="background:rgba(22,163,74,.18)"></i>nenhuma em atraso</span><span><i style="background:rgba(192,0,0,.25)"></i>poucas em atraso</span><span><i style="background:rgba(192,0,0,.9)"></i>muitas em atraso</span>')+
+    '<span><i style="background:var(--surface-2);border:1px solid var(--line)"></i>sem NF no mês</span>';
+  $('#expHeat').onclick=()=>{const aoaCols=[{k:'nome',t:F.visao==='d'?'Filial de destino':'Filial de origem'}].concat(keys.map(k=>({k:'m'+k,t:mkLabel(k)+(heatModo==='atr'?' · em atraso':heatModo==='n'?' · NFs':' · % atraso')})));
+    const rows=fil.map(f=>{const o={nome:f.nome};keys.forEach(k=>{const x=idx.get(f.k+'|'+k);o['m'+k]=x?(heatModo==='pct'?(x.n?x.atr/x.n:null):heatModo==='n'?x.n:x.atr):0;});return o;});
+    exportXlsx('NFs_filial_x_mes_'+heatModo,aoaCols,rows);};
+}
+
+/* ---------------- ROTAS ---------------- */
+function renderRotas(){
+  const m=new Map();R.rows.forEach(r=>{const k=r.ko+'>'+r.kd;if(!m.has(k))m.set(k,[]);m.get(k).push(r);});
+  const rows=[...m.entries()].map(([k,rs])=>{const a=agg(rs);const [o,d]=k.split('>');a.ko=o;a.kd=d;a.o=nomeK(o);a.d=nomeK(d);a.rs=rs;return a;});
+  const cols=[{k:'o',t:'Origem',f:r=>esc(r.o)},{k:'d',t:'Destino',f:r=>esc(r.d)},{k:'n',t:'NFs',n:1},{k:'atr',t:'Em atraso',n:1},{k:'pct',t:'% em atraso',n:1,f:r=>fP(r.pct),cl:r=>tonePct(r.pct),x:r=>r.pct},
+    {k:'med',t:'Média (dias)',n:1,f:r=>r.med==null?'—':nf1.format(r.med),x:r=>r.med},{k:'mediana',t:'Mediana',n:1},{k:'max',t:'Maior',n:1},{k:'vAtr',t:'Valor em atraso',n:1,f:r=>fR(r.vAtr),x:r=>r.vAtr}];
+  table('#tbRotas',cols,rows,{sort:{k:'atr',d:-1},limit:200,click:r=>abrirLista(r.o+' → '+r.d,'Rota · '+perTxt(),r.rs)});
+  $('#rtNota').textContent=fN(rows.length)+' rotas no filtro'+(rows.length>200?'; mostrando as 200 primeiras pela ordenação escolhida.':'.')+' Clique numa rota para ver as NFs.';
+  $('#expRotas').onclick=()=>exportXlsx('NFs_rotas',cols,sortedRows('#tbRotas',cols,rows,{k:'atr',d:-1}));
+}
+
+/* ---------------- LISTA DE NFS ---------------- */
+let nfPag=0;
+function nfFiltradas(){
+  const q=norm($('#nfBusca').value),so=$('#nfSo').value;
+  return R.rows.filter(r=>(so!=='atr'||r.atr)&&(so!=='emi'||r.base!=='ETR')&&(!q||norm(r.nf).includes(q)||String(r.id).includes(q)||norm(nomeK(r.ko)).includes(q)||norm(nomeK(r.kd)).includes(q)||norm(r.u).includes(q)||norm(r.ch).includes(q)));
+}
+function renderNFs(){
+  const rows=nfFiltradas();const per=50,pages=Math.max(1,Math.ceil(rows.length/per));nfPag=Math.min(nfPag,pages-1);
+  table('#tbNF',COLS_NF,rows,{sort:{k:'dias',d:-1},offset:nfPag*per,limit:per,onSort:()=>{nfPag=0;}});
+  $('#nfPager').innerHTML=`<button class="btn ghost small" id="nfPrev" ${nfPag?'':'disabled'}>Anterior</button><span>Página ${nfPag+1} de ${pages} · ${fN(rows.length)} NFs</span><button class="btn ghost small" id="nfNext" ${nfPag<pages-1?'':'disabled'}>Próxima</button>`;
+  $('#nfPrev').onclick=()=>{nfPag--;renderNFs();};$('#nfNext').onclick=()=>{nfPag++;renderNFs();};
+  $('#expNF').onclick=()=>exportXlsx('NFs_lista',COLS_NF,sortedRows('#tbNF',COLS_NF,rows,{k:'dias',d:-1}));
+}
+
+/* ---------------- DADOS ---------------- */
+function renderDados(){
+  const A=ALL;const rng=arr=>{const v=arr.filter(x=>x!=null);if(!v.length)return '—';let mi=Infinity,ma=-Infinity;v.forEach(x=>{if(x<mi)mi=x;if(x>ma)ma=x;});return fD(mi)+' a '+fD(ma);};
+  const semEtr=A.filter(r=>r.etr==null),etrDep=A.filter(r=>r.base==='Emissão (ETR após a NR)'),etrIg=A.filter(r=>r.etr!=null&&dkey(r.etr)===r.dia),neg=A.filter(r=>r.neg);
+  const unid=new Map();A.forEach(r=>{[r.ko,r.kd].forEach(k=>{if(k[0]==='U')unid.set(k,(unid.get(k)||0)+1);});});
+  const apel=new Map();A.forEach(r=>{[[r.o,r.ko],[r.d,r.kd]].forEach(([raw,k])=>{if(k[0]==='F'&&norm(raw)!==norm(nomeK(k)))apel.set(raw+' → '+nomeK(k),1);});});
+  const sit=topBy(A,r=>r.sit,10);const canc=RAW.filter(r=>norm(r.sit)==='cancelada').length;
+  const Q=[
+    ['NFs na base',fN(A.length),rng(A.map(r=>r.dia)),'Base: '+(BASE_ATIVA==='embutida'?'embutida (exportação de 10/11/2026)':'substituída por '+BASE_ATIVA)+'. Cada linha é uma NR (Id NR); o período é pela data de entrada (Data Emissão NR).'],
+    ['Sem Data ETR',fN(semEtr.length),rng(semEtr.map(r=>r.dia)),'Calculadas pela Data Emissão Nota'],
+    ['Data ETR depois da entrada',fN(etrDep.length),rng(etrDep.map(r=>r.dia)),'Calculadas pela Data Emissão Nota, como pede a regra'],
+    ['Data ETR igual à entrada',fN(etrIg.length),rng(etrIg.map(r=>r.dia)),METAS.igual==='etr'?'Contam pela ETR (0 dia), como definido pela Prevenção de Perdas':'Configurado para contar pela Data Emissão Nota'],
+    ['Cálculo negativo zerado',fN(neg.length),rng(neg.map(r=>r.dia)),'Emissão com horário e NR no mesmo dia: contam como 0 dia'],
+    ['Situação da NR',sit.map(([s,n])=>esc(s)+': '+fN(n)).join(' · '),'—','Aberta e Lógica entram no cálculo. Use o filtro de situação para olhar só uma delas'],
+    ['NR cancelada (fora do cálculo)',fN(canc),'—','NFs com Situação NR Cancelada não entram em nenhum número do módulo'],
+    ['Unidades fora do cadastro de lojas',fN(unid.size),'—',unid.size?[...unid.entries()].map(([k,n])=>esc(UNOME.get(k))+' ('+fN(n)+')').join(', ')+'. Aparecem com o próprio nome e em “Outras unidades”':'—'],
+    ['Nomes ajustados para o cadastro',fN(apel.size),'—',apel.size?[...apel.keys()].map(esc).join(', '):'—']];
+  table('#tbQual',[{k:0,t:'Verificação'},{k:1,t:'Quantidade',n:1},{k:2,t:'Período'},{k:3,t:'Observação',cl:()=>'wrap'}],Q);
+  const inp=(k,t,u,step,min,max)=>`<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:bold;color:var(--title);">${t}<span style="display:flex;align-items:center;gap:6px;"><input type="number" step="${step}" min="${min}" max="${max}" data-m="${k}" value="${METAS[k]??''}" placeholder="a definir" style="width:100px;"> ${u}</span></label>`;
+  $('#metasForm').innerHTML=inp('lim','Atraso a partir de (mais de)','dias',1,0,60)+inp('mOk','% de NFs em atraso · meta (até)','%',0.1,0,100)+inp('mMax','% de NFs em atraso · máximo','%',0.1,0,100)+inp('minNF','Mínimo de NFs para classificar','NFs',1,1,10000)+inp('car','Desconsiderar os últimos','dias',1,0,90)+
+    `<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:bold;color:var(--title);">Quando a ETR é no mesmo dia da NR<select data-m="igual" style="width:230px;"><option value="etr" ${METAS.igual==='etr'?'selected':''}>Contar pela ETR (0 dia)</option><option value="em" ${METAS.igual==='em'?'selected':''}>Contar pela emissão da nota</option></select></label>`;
+  table('#tbCargas',[{k:'quando',t:'Quando',f:c=>fDH(c.quando)},{k:'por',t:'Por',f:c=>esc(NOMES_U.get(c.por)||(c.por?'—':'este navegador'))},{k:'modo',t:'Tipo de carga',f:c=>c.modo==='substituir'?'<span class="tag warn">Substituiu a base</span>':'<span class="tag ok">Adicionou</span>'},{k:'nome',t:'Arquivo',cl:()=>'wrap'},{k:'nl',t:'NFs',n:1,f:c=>fN((c.rows||[]).length)},{k:'x',t:'',f:c=>`<button class="btn ghost small" data-del="${c.key}">Excluir</button>`}],CARGAS,{vazio:'Nenhuma carga enviada. Valendo a base embutida.'});
+  $('#tbCargas').querySelectorAll('[data-del]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const k=SDB?b.dataset.del:+b.dataset.del;if(SDB&&!await pergunta('Excluir esta carga para todos que usam o módulo?'))return;await idbDel(k);CARGAS=CARGAS.filter(c=>c.key!==k);afterData('Carga excluída.');});
+}
+function bindDados(){
+  const drop=(zona,btn,inp,fn)=>{$(btn).onclick=()=>$(inp).click();$(inp).onchange=e=>{fn([...e.target.files]);e.target.value='';};const dz=$(zona);
+    ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
+    ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
+    dz.addEventListener('drop',e=>fn([...e.dataTransfer.files]));};
+  drop('#dropUp','#btnUp','#fileUp',handleFiles);drop('#dropBase','#btnBase','#fileBase',handleBase);
+  $('#metaSalvar').onclick=()=>{const novo={...METAS};
+    document.querySelectorAll('#metasForm [data-m]').forEach(i=>{const k=i.dataset.m;if(k==='igual'){novo.igual=i.value;return;}const v=i.value===''?null:parseFloat(i.value);novo[k]=v!=null&&isFinite(v)?v:null;});
+    if(novo.lim==null||novo.lim<0){toast('Informe a partir de quantos dias a NF é considerada em atraso.');return;}
+    if((novo.mOk==null)!==(novo.mMax==null)){toast('Preencha a meta e o máximo juntos, ou deixe os dois em branco.');return;}
+    if(novo.mOk!=null&&novo.mOk>novo.mMax){toast('A meta não pode ser maior que o máximo.');return;}
+    if(!novo.minNF||novo.minNF<1)novo.minNF=1;
+    if(!novo.car||novo.car<0)novo.car=0;
+    METAS=novo;salvarMetas();derivar();refresh();pitstopAgendar();toast(SDB?'Metas e regras salvas para todos. O cálculo foi refeito.':'Metas e regras salvas. O cálculo foi refeito.');};
+  $('#metaPadrao').onclick=()=>{METAS={...METAS_PADRAO};salvarMetas();derivar();refresh();pitstopAgendar();toast('Voltou ao padrão: atraso acima de 3 dias, ETR no mesmo dia conta como 0, meta de 0,5% de NFs em atraso e últimos 15 dias fora do cálculo.');};
+  $('#btnReset').onclick=async()=>{if(!CARGAS.length){toast('Não há cargas para remover.');return;}if(SDB&&!await pergunta('Remover todas as cargas para todos que usam o módulo?'))return;await idbClear();CARGAS=[];afterData('Cargas removidas. Valendo só a base embutida.');$('#resUp').innerHTML='';$('#resBase').innerHTML='';};
+}
+const SEM_COLUNAS='não encontrei as colunas da exportação de NFs (Id NR, Filial Origem, Filial Destino, Data Emissão Nota e Data Emissão NR). Confira se é a exportação certa.';
+const agora=()=>Date.now()-new Date().getTimezoneOffset()*60000;
+async function handleFiles(files){
+  if(!files.length)return;
+  const res=$('#resUp');res.innerHTML='<p class="note">Lendo '+files.length+' arquivo(s)…</p>';const msgs=[];
+  for(const f of files){
+    try{const rows=await lerArquivo(f);
+      if(!rows||!rows.length){msgs.push(`<p class="res-err">${esc(f.name)}: ${SEM_COLUNAS}</p>`);continue;}
+      const ids=new Map(RAW.map(r=>[r.id,r]));const nov=rows.filter(r=>!ids.has(r.id)).length;
+      const mud=rows.filter(r=>{const o=ids.get(r.id);return o&&(o.nr!==r.nr||o.etr!==r.etr||o.sit!==r.sit);}).length;
+      const novN=new Set();rows.forEach(r=>[r.o,r.d].forEach(n=>{if(filialNum(n)==null)novN.add(n);}));
+      const c={nome:f.name,quando:agora(),modo:'adicionar',rows:[...rows]};
+      try{c.key=await idbAdd(c);}catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: lido, mas não gravado na base compartilhada.</p>`);continue;}
+      if(!CARGAS.some(x=>x.key===c.key))CARGAS.push(c);
+      msgs.push(`<p class="res-ok">${esc(f.name)}: ${fN(rows.length)} NFs lidas, ${fN(nov)} novas e ${fN(mud)} com entrada, ETR ou situação atualizada.${rows.ignoradas?' '+fN(rows.ignoradas)+' linha(s) sem Id NR ou sem datas foram ignoradas (ex.: rodapé de filtros).':''}</p>`+
+        (novN.size?`<p class="res-warn">Unidades fora do cadastro de lojas: ${[...novN].map(esc).join(', ')}. Elas entram com o próprio nome; confira no de-para de filiais.</p>`:''));
+    }catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: não foi possível ler o arquivo (${esc(e.message)}).</p>`);}
+  }
+  res.innerHTML=msgs.join('');afterData('Base atualizada.');
+}
+async function handleBase(files){
+  if(!files.length)return;
+  const res=$('#resBase');res.innerHTML='<p class="note">Lendo '+files.length+' arquivo(s)…</p>';
+  const m=new Map();const msgs=[];
+  for(const f of files){try{const rows=await lerArquivo(f);if(!rows||!rows.length){msgs.push(`<p class="res-err">${esc(f.name)}: ${SEM_COLUNAS}</p>`);continue;}rows.forEach(r=>m.set(r.id,r));}catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: não foi possível ler o arquivo (${esc(e.message)}).</p>`);}}
+  if(!m.size){res.innerHTML=msgs.join('')||'<p class="res-err">Nenhuma NF reconhecida. A base atual foi mantida.</p>';return;}
+  if(!await pergunta('Substituir a base por '+fN(m.size)+' NFs (hoje: '+fN(RAW.length)+')?\n\nO que existe hoje deixa de valer. Dá para desfazer excluindo a carga no histórico.')){res.innerHTML='<p class="res-warn">Substituição cancelada. A base atual foi mantida.</p>';return;}
+  const c={nome:files.map(f=>f.name).join(' + '),quando:agora(),modo:'substituir',rows:[...m.values()]};
+  try{c.key=await idbAdd(c);}catch(e){res.innerHTML='<p class="res-err">Arquivos lidos, mas a substituição não foi gravada na base compartilhada. A base atual foi mantida.</p>';return;}
+  if(!CARGAS.some(x=>x.key===c.key))CARGAS.push(c);
+  msgs.push(`<p class="res-ok">Base substituída: ${fN(m.size)} NFs.</p>`);res.innerHTML=msgs.join('');afterData('Base substituída.');
+}
+function afterData(msg){rebuild();setupFilters();refresh();pitstopAgendar();if(msg)toast(msg);}
+
+/* ---------------- resumo para o S.E.N.N.A. - Pit Stop ----------------
+   Uma célula por loja de destino (quem dá entrada) e período (cada mês e o ano inteiro, pela data de entrada),
+   com o mesmo agg() do painel e já sem os últimos dias da carência. % em atraso = atr ÷ n.
+   Fica em pitstop/resumo; o Pit Stop mostra uma cópia deste documento e não refaz a conta. */
+let PS_T=null,PS_ULT=null;
+function pitstopResumo(){
+  if(!ALL.length||!CORTE)return null;
+  const anoMax=new Date(CORTE).getUTCFullYear(),mkMin=(anoMax-1)*12,ok=new Set(LOJAS.map(l=>'F'+l.num)),G=new Map(),P=new Set();
+  ALL.forEach(r=>{if(r.dia>CAR_LIM)return;const mk=mkOf(r.dia);if(mk<mkMin)return;const a=Math.floor(mk/12);
+    for(const pk of [a+'-'+String(mk%12+1).padStart(2,'0'),String(a)]){P.add(pk);if(!ok.has(r.kd))continue;const k=r.kd.slice(1)+'|'+pk;if(!G.has(k))G.set(k,[]);G.get(k).push(r);}});
+  const L={};
+  G.forEach((rs,k)=>{const i=k.indexOf('|'),l=k.slice(0,i),pk=k.slice(i+1),a=agg(rs);
+    (L[l]||(L[l]={}))[pk]={n:a.n,atr:a.atr,med:a.med==null?null:Math.round(a.med*100)/100,max:a.max,vAtr:Math.round((a.vAtr||0)*100)/100};});
+  return {dadosAte:new Date(CORTE).toISOString().slice(0,10),calcAte:METAS.car>0?new Date(CAR_LIM*DAY).toISOString().slice(0,10):new Date(CORTE).toISOString().slice(0,10),
+    metas:{lim:METAS.lim,mOk:METAS.mOk,mMax:METAS.mMax,minNF:METAS.minNF,car:METAS.car||0},periodos:[...P].sort(),lojas:L};
+}
+function pitstopAgendar(){clearTimeout(PS_T);PS_T=setTimeout(pitstopGravar,3000);}
+async function pitstopGravar(){
+  try{
+    if(!SDB||!UCAP)return;                           /* sem base compartilhada não há o que gravar */
+    if(!(await UCAP.canEdit()))return;               /* só quem edita o módulo gera o resumo */
+    const r=pitstopResumo();if(!r)return;
+    const corpo=JSON.stringify(r);if(corpo===PS_ULT)return;
+    const ref=SDB.doc('pitstop/resumo');
+    if(PS_ULT===null){const s=await ref.get();if(s.exists&&s.data().corpo===corpo){PS_ULT=corpo;return;}}
+    await ref.set({v:1,modulo:'nfs',geradoEm:new Date().toISOString(),corpo});PS_ULT=corpo;
+  }catch(e){console.warn('Resumo para o Pit Stop não gravado:',(e&&e.code)||e);}
+}
+
+/* ---- IndexedDB (reserva quando não há base compartilhada) ---- */
+let _db=null;
+function idbL(){return new Promise((ok,err)=>{if(_db)return ok(_db);try{const r=indexedDB.open('ldm_nfs',1);r.onupgradeneeded=()=>r.result.createObjectStore('cargas',{keyPath:'key',autoIncrement:true});r.onsuccess=()=>{_db=r.result;ok(_db);};r.onerror=()=>err(r.error);}catch(e){err(e);}});}
+async function locAll(){try{const db=await idbL();return await new Promise((ok,err)=>{const q=db.transaction('cargas').objectStore('cargas').getAll();q.onsuccess=()=>ok(q.result||[]);q.onerror=()=>err(q.error);});}catch(e){return [];}}
+async function locAdd(c){try{const db=await idbL();return await new Promise((ok,err)=>{const o={...c};delete o.key;const q=db.transaction('cargas','readwrite').objectStore('cargas').add(o);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});}catch(e){return Date.now();}}
+async function locDel(k){try{const db=await idbL();await new Promise(ok=>{const q=db.transaction('cargas','readwrite').objectStore('cargas').delete(k);q.onsuccess=ok;q.onerror=ok;});}catch(e){}}
+async function locClear(){try{const db=await idbL();await new Promise(ok=>{const q=db.transaction('cargas','readwrite').objectStore('cargas').clear();q.onsuccess=ok;q.onerror=ok;});}catch(e){}}
+
+/* ---- Base compartilhada (todos veem as mesmas cargas) ---- */
+let SDB=null,ME=null,UCAP=null;const NOMES_U=new Map();const SCACHE=new Map();let primeiro=null;
+function statusDb(cls,txt){$('#hdDb').className='pill '+cls;$('#hdDbTxt').textContent=txt;}
+async function conectarCompartilhada(){
+  try{SDB=window.claude?await window.claude.use('db'):null;}catch(e){SDB=null;}
+  try{UCAP=window.claude?await window.claude.use('user'):null;if(UCAP){const me=await UCAP.me();ME=me&&me.id||null;}}catch(e){UCAP=null;}
+  if(!SDB)return;
+  SDB.doc('config/metas').onSnapshot(s=>{const d=s.exists?s.data():null;if(d&&typeof d.lim==='number'){METAS={...METAS_PADRAO,...d};if(R){derivar();refresh();pitstopAgendar();}}},()=>{});
+  primeiro=new Promise(res=>{let feito=false;const t=setTimeout(()=>{if(!feito){feito=true;res([]);statusDb('warn','Base compartilhada sem resposta');}},10000);
+    SDB.collection('cargas').onSnapshot(async snap=>{
+      const metas=snap.docs.filter(d=>d.exists).map(d=>Object.assign({key:d.id},d.data()));
+      for(const m of metas){if(SCACHE.has(m.key))continue;try{let z='';for(let p=0;p<(m.partes||0);p++){const d=await SDB.doc(`cargas/${m.key}/partes/p${p}`).get();z+=d.exists?d.data().z:'';}SCACHE.set(m.key,JSON.parse(await gunzipB64(z)));}catch(e){console.warn('carga ilegível',m.key,e);}}
+      const lista=metas.filter(m=>SCACHE.has(m.key)).sort((a,b)=>a.quando-b.quando).map(m=>Object.assign({},m,SCACHE.get(m.key)));
+      const ids=[...new Set(lista.map(c=>c.por).filter(Boolean))].filter(id=>!NOMES_U.has(id));
+      if(UCAP&&ids.length){try{const ps=await UCAP.profiles(ids);ids.forEach(id=>NOMES_U.set(id,(ps[id]&&ps[id].name)||'Alguém'));}catch(e){}}
+      if(!feito){feito=true;clearTimeout(t);res(lista);}else{CARGAS=lista;afterData(null);}
+    },e=>{if(!feito){feito=true;clearTimeout(t);res([]);}statusDb('off','Erro ao ler a base compartilhada ('+e.code+')');});});
+}
+async function idbAll(){if(!SDB)return locAll();return await primeiro;}
+async function idbAdd(c){
+  if(!SDB)return locAdd(c);
+  const id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const body={rows:c.rows};const z=await gzipB64(body);const TAM=200000;const partes=Math.ceil(z.length/TAM);
+  try{for(let p=0;p<partes;p++)await SDB.doc(`cargas/${id}/partes/p${p}`).set({z:z.slice(p*TAM,(p+1)*TAM)});
+    SCACHE.set(id,body);c.por=ME;
+    await SDB.doc('cargas/'+id).set({nome:c.nome,quando:c.quando,modo:c.modo||'adicionar',nRows:c.rows.length,partes,por:ME||null,criadoEm:new Date().toISOString()});
+  }catch(e){toast(e&&e.code==='quota_exceeded'?'O espaço da base compartilhada acabou. Exclua cargas antigas.':'Não foi possível gravar na base compartilhada ('+(e&&e.code||'erro')+'). Confira se você tem permissão de edição.');throw e;}
+  return id;}
+async function idbDel(k){if(!SDB)return locDel(k);const m=CARGAS.find(c=>c.key===k);try{await SDB.doc('cargas/'+k).delete();for(let p=0;p<((m&&m.partes)||0);p++)await SDB.doc(`cargas/${k}/partes/p${p}`).delete();}catch(e){toast('Não foi possível excluir ('+(e&&e.code||'erro')+').');}}
+async function idbClear(){if(!SDB)return locClear();for(const c of [...CARGAS])await idbDel(c.key);}
+
+function salvarMetas(){lsSet('ldm_nfs_metas',METAS);if(SDB)SDB.doc('config/metas').set({...METAS}).catch(()=>toast('Metas aplicadas só nesta tela: sem permissão para gravar.'));}
+
+/* ---------------- navegação ---------------- */
+const PAGES=['painel','mensal','rotas','nfs','dados'];
+const RENDER={painel:renderPainel,mensal:renderMensal,rotas:renderRotas,nfs:renderNFs,dados:renderDados};
+function irPara(p){
+  if(!PAGES.includes(p))p='painel';pagina=p;
+  PAGES.forEach(x=>{const s=$('#page-'+x);if(s)s.hidden=x!==p;});
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+  $('#filtros').style.display=p==='dados'?'none':'';
+  if(R)RENDER[p]();
+  window.scrollTo(0,0);
+}
+function refresh(){recalc();RENDER[pagina]();}
+function ajustarNav(){document.documentElement.style.setProperty('--header-h',$('#hdr').offsetHeight+'px');}
+
+async function init(){
+  ajustarNav();window.addEventListener('resize',ajustarNav);
+  $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b){if(location.hash.slice(1)===b.dataset.page)irPara(b.dataset.page);else location.hash=b.dataset.page;}});
+  window.addEventListener('hashchange',()=>irPara(location.hash.slice(1)));
+  document.addEventListener('click',e=>{if(e.target.matches('[data-close]')||e.target.id==='mdDet')$('#mdDet').hidden=true;});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#mdDet').hidden=true;});
+  $('#mdDetExp').onclick=exportModal;
+  chipGroup('#filModo','m',v=>{filModo=v;renderChFil();});
+  chipGroup('#heatModo','m',v=>{heatModo=v;renderMensal();});
+  let tm;$('#nfBusca').oninput=()=>{clearTimeout(tm);tm=setTimeout(()=>{nfPag=0;renderNFs();},250);};$('#nfSo').onchange=()=>{nfPag=0;renderNFs();};
+  try{BASE=baseEmbutida(JSON.parse(await gunzipB64(PAYLOAD||(PAYLOAD=await SENNA.embutido('nfs-payload')))));}
+  catch(e){$('#loading').textContent='Não foi possível abrir a base embutida: '+e.message+'. Use um navegador atualizado (Chrome, Edge, Firefox ou Safari).';return;}
+  METAS={...METAS_PADRAO,...lsGet('ldm_nfs_metas',{})};
+  await conectarCompartilhada();
+  if(!SDB){const t=$('#txtOndeCargas');if(t)t.textContent='Nesta visualização as cargas ficam só neste navegador.';}
+  CARGAS=await idbAll();
+  rebuild();setupFilters();bindFilters();bindDados();
+  recalc();$('#loading').remove();irPara(location.hash.slice(1)||'painel');pitstopAgendar();
+}
+init();
+
+</script>
+<script>
+const NOMES_ABA={painel:'Painel NFs',mensal:'Filial x mês',rotas:'Rotas',nfs:'NFs',dados:'Atualizar dados'};
+window.chatContexto=()=>{try{return `Aba aberta: ${NOMES_ABA[pagina]||pagina}. Período da entrada: ${fD(F.ini)} a ${fD(F.fim)}. Visão: ${visTxt()}. Distrito: ${F.dist||'todos'}. Filial: ${F.fil?nomeK(F.fil):'todas'}. Tipo de operação: ${F.top||'todos'}. Situação NR: ${F.sit||'todas'}. Regras: atraso acima de ${METAS.lim} dias; ETR no mesmo dia da NR conta ${METAS.igual==='etr'?'pela ETR (0 dia)':'pela emissão'}; meta de % em atraso ${TEM_META()?'até '+METAS.mOk+'% e máximo '+METAS.mMax+'%':'ainda não definida'}; ${METAS.car>0?'últimos '+METAS.car+' dias de entrada fora do cálculo':'sem carência'}. Entradas até ${$('#hdUltima').textContent}. Cargas: ${CARGAS.length}.`;}catch(e){return '';}};
+window.CHAT_TOOLS=[{name:'ler_aba',description:'Lê os números e textos que o módulo mostra numa aba, já com os filtros atuais. Abas: painel, mensal, rotas, nfs, dados.',
+  inputSchema:{type:'object',properties:{aba:{type:'string',enum:['painel','mensal','rotas','nfs','dados']}},required:['aba']},
+  execute:({aba})=>{const el=document.getElementById('page-'+aba);if(!el)throw new Error('Aba inexistente');try{if(aba!==pagina&&RENDER[aba])RENDER[aba]();}catch(e){}
+    const txt=new DOMParser().parseFromString('<body>'+el.innerHTML.replace(/<(script|style|canvas)[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]+>/g,' ')+'</body>','text/html').body.textContent;return txt.replace(/\s+/g,' ').trim().slice(0,7000);}}];
+</script>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "S.E.N.N.A. · Prevenção de Perdas LDM",
+  "short_name": "S.E.N.N.A.",
+  "description": "Painéis da Prevenção de Perdas da Loja do Mecânico",
+  "lang": "pt-BR",
+  "start_url": "./central/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#001A72",
+  "theme_color": "#001A72",
+  "icons": [
+    {"src": "assets/icone-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "assets/icone-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "assets/icone-512-mascara.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

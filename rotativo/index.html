@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script src="../assets/firebase-config.js"></script>
+<script src="../assets/senna-runtime.js" data-modulo="rotativo"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#001A72">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="S.E.N.N.A.">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>S.E.N.N.A. - Inventários Rotativos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --ldm-orange:#FE5000; --ldm-blue:#001A72; --ldm-white:#FFFFFF;
+  --bg:#F4F6FB; --surface:#FFFFFF; --surface-2:#F8FAFC; --text:#1E293B; --muted:#64748B; --line:#E2E8F0;
+  --title:#001A72; --dark-card:#0A1554; --green:#16A34A; --red:#C00000; --amber:#D97706;
+  --chip-bg:#F8FAFC; --hover:#FFF1E8; --input:#FFFFFF;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1020; --surface:#141B30; --surface-2:#1A2340; --text:#E5E9F2; --muted:#93A0B8; --line:#2A3453;
+    --title:#AFC2FF; --dark-card:#0A1554; --green:#4ADE80; --red:#FF6B6B; --amber:#FBBF24;
+    --chip-bg:#1A2340; --hover:#2A2016; --input:#0F1528; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#141B30; --surface-2:#1A2340; --text:#E5E9F2; --muted:#93A0B8; --line:#2A3453;
+  --title:#AFC2FF; --dark-card:#0A1554; --green:#4ADE80; --red:#FF6B6B; --amber:#FBBF24;
+  --chip-bg:#1A2340; --hover:#2A2016; --input:#0F1528; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding-left:64px;}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:70;background:var(--ldm-blue);}
+button,input,select{font-family:inherit;}
+:focus-visible{outline:2px solid var(--ldm-orange);outline-offset:2px;}
+
+header{background:var(--ldm-blue);color:#fff;padding:18px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-bottom:6px solid var(--ldm-orange);margin-left:-64px;width:calc(100% + 64px);position:relative;z-index:50;}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{background:var(--ldm-orange);color:#fff;font-weight:bold;font-size:17px;letter-spacing:.02em;border-radius:8px;padding:9px 10px;line-height:1;}
+header h1{font-size:19px;margin:0;}
+header p{margin:3px 0 0;font-size:12.5px;color:#C9D2F0;}
+header .tag{font-size:12px;font-style:italic;color:#FFD9C2;}
+.hd-status{display:flex;flex-direction:column;align-items:flex-end;gap:5px;font-size:12px;color:#C9D2F0;}
+.hd-status b{color:#fff;}
+.pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 11px;font-size:11.5px;color:#fff;}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#94A3B8;}
+.pill.ok .dot{background:#4ADE80;} .pill.warn .dot{background:#FBBF24;} .pill.off .dot{background:#F87171;}
+
+.navrail{position:fixed;left:0;top:var(--header-h,84px);bottom:0;width:64px;background:var(--ldm-blue);z-index:60;display:flex;flex-direction:column;align-items:center;
+  padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));gap:8px;border-right:3px solid var(--ldm-orange);}
+.navrail button{width:46px;height:46px;border-radius:10px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;color:#C9D2F0;}
+.navrail button svg{width:24px;height:24px;}
+.navrail button:hover{background:rgba(255,255,255,.12);color:#fff;}
+.navrail button.active{background:#fff;color:var(--ldm-blue);}
+.navrail button.active::before{content:"";position:absolute;left:-9px;top:8px;bottom:8px;width:4px;border-radius:0 3px 3px 0;background:var(--ldm-orange);}
+.navrail button::after{content:attr(data-tip);position:absolute;left:56px;top:50%;transform:translateY(-50%);background:var(--dark-card);color:#fff;font-size:11.5px;font-weight:bold;
+  padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+.navrail button:hover::after,.navrail button:focus-visible::after{opacity:1;}
+
+main{padding:0 26px 60px;max-width:1720px;margin:0 auto;}
+.filters{position:sticky;top:0;z-index:40;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:bold;color:var(--title);letter-spacing:.02em;}
+select,input[type=text],input[type=number]{height:32px;padding:0 8px;border-radius:6px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:12.5px;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 11px;cursor:pointer;background:var(--chip-bg);font-size:12px;color:var(--text);user-select:none;}
+.chip[aria-pressed="true"]{background:var(--ldm-blue);color:#fff;border-color:var(--ldm-blue);}
+.btn{background:var(--ldm-orange);color:#fff;border:none;padding:9px 15px;border-radius:6px;font-weight:bold;font-size:12.5px;cursor:pointer;white-space:nowrap;}
+.btn:hover{opacity:.92;} .btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn.blue{background:var(--ldm-blue);} .btn.ghost{background:transparent;color:var(--title);border:1px solid var(--line);} .btn.green{background:var(--green);}
+.btn.small{padding:6px 11px;font-size:11.5px;}
+
+.section-title{font-size:14px;font-weight:bold;color:var(--title);margin:26px 0 12px;border-left:4px solid var(--ldm-orange);padding-left:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.section-title .grow{flex:1;}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
+.panel h4{margin:0 0 10px;font-size:12.5px;color:var(--title);}
+.note{font-size:11.5px;color:var(--muted);line-height:1.55;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-1-2{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;}
+.chart{position:relative;height:330px;} .chart.sm{height:280px;} .chart.tall{height:520px;}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px;}
+.kpi{background:var(--ldm-blue);color:#fff;border-radius:10px;padding:14px 16px;border-top:4px solid var(--ldm-orange);position:relative;min-height:118px;}
+.kpi .k{font-size:11px;color:#C9D2F0;font-weight:bold;line-height:1.3;}
+.kpi .v{font-size:26px;font-weight:bold;line-height:1.15;margin:7px 0 3px;font-variant-numeric:tabular-nums;}
+.kpi .v.neg{color:#FFB4A2;} .kpi .v.pos{color:#6EE7A8;}
+.kpi .s{font-size:11px;color:#C9D2F0;line-height:1.45;} .kpi .s b{color:#fff;}
+.kpi .badge{position:absolute;top:10px;right:11px;font-size:10px;font-weight:bold;background:rgba(255,255,255,.16);padding:2px 8px;border-radius:9px;}
+
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;}
+.insight{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--ldm-orange);border-radius:10px;padding:13px 15px;font-size:12.5px;line-height:1.55;}
+.insight.blue{border-top-color:var(--ldm-blue);} .insight.green{border-top-color:var(--green);} .insight.red{border-top-color:var(--red);}
+.insight h5{margin:0 0 5px;font-size:13px;color:var(--title);}
+.insight b{color:var(--title);}
+
+table.tb{width:100%;border-collapse:collapse;font-size:12px;}
+table.tb th{background:var(--dark-card);color:#fff;padding:7px 9px;text-align:left;font-size:11px;white-space:nowrap;position:sticky;top:0;z-index:1;}
+table.tb th.sort{cursor:pointer;} table.tb th.sort:hover{background:#13227A;}
+table.tb td{padding:6px 9px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.tb tr:nth-child(even) td{background:var(--surface-2);}
+table.tb td.n,table.tb th.n{text-align:right;font-variant-numeric:tabular-nums;}
+table.tb td.neg{color:var(--red);font-weight:bold;} table.tb td.pos{color:var(--green);font-weight:bold;}
+table.tb tr.click{cursor:pointer;} table.tb tr.click:hover td{background:var(--hover);}
+table.tb tr.tot td{font-weight:bold;background:var(--surface-2);border-top:2px solid var(--line);}
+.scroll{overflow-x:auto;max-width:100%;} .scroll.v{max-height:560px;overflow:auto;}
+td.wrap{white-space:normal;min-width:220px;}
+
+table.heat{border-collapse:separate;border-spacing:2px;font-size:11.5px;width:100%;}
+table.heat th{font-size:10.5px;color:var(--muted);font-weight:bold;padding:4px 5px;text-align:center;white-space:nowrap;}
+table.heat th.lj{text-align:left;color:var(--title);}
+table.heat td{padding:7px 4px;text-align:center;border-radius:4px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:52px;}
+.legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap;}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+
+.upload{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--hover);border:1px dashed var(--ldm-orange);border-radius:8px;padding:13px 16px;}
+.upload .t{font-weight:bold;color:var(--title);font-size:13px;}
+.upload input[type=file]{display:none;}
+.drop.over{outline:3px solid var(--ldm-orange);}
+.res-ok{color:var(--green);font-weight:bold;} .res-err{color:var(--red);font-weight:bold;} .res-warn{color:var(--amber);font-weight:bold;}
+.impact{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0;}
+.impact div{border:1px solid var(--line);border-left:4px solid var(--ldm-orange);border-radius:8px;padding:9px 12px;background:var(--surface-2);}
+.impact .k{font-size:10.5px;color:var(--muted);font-weight:bold;} .impact .v{font-size:18px;font-weight:bold;color:var(--title);margin-top:3px;font-variant-numeric:tabular-nums;}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:bold;}
+.tag.err{background:#FDE2E2;color:#991B1B;} .tag.warn{background:#FEF3C7;color:#92400E;} .tag.ok{background:#DCFCE7;color:#166534;}
+code{background:var(--surface-2);border:1px solid var(--line);padding:0 4px;border-radius:3px;font-size:11.5px;}
+
+.modal{position:fixed;inset:0;background:rgba(0,26,114,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal[hidden]{display:none;}
+.modal-box{background:var(--surface);border-radius:12px;width:100%;max-width:1100px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35);}
+.modal-head{background:var(--ldm-blue);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;gap:14px;border-bottom:5px solid var(--ldm-orange);}
+.modal-head h3{margin:0 0 3px;font-size:15px;} .modal-head .sub{font-size:11.5px;color:#C9D2F0;}
+.modal-close{background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;flex:0 0 auto;}
+.modal-body{padding:14px 18px 18px;overflow:auto;}
+#toast{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:500;max-width:420px;background:var(--ldm-blue);color:#fff;border-left:4px solid var(--ldm-orange);
+  border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s;}
+#toast.vis{opacity:1;transform:none;}
+.loading{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px;}
+.pager{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+footer{text-align:center;font-size:11px;color:var(--muted);padding:18px;border-top:1px solid var(--line);}
+
+@media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr);} .impact{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:900px){.grid2,.grid-1-2{grid-template-columns:1fr;}}
+@media (max-width:760px){
+  body{padding-left:0;}
+  header{margin-left:0;width:100%;padding:14px 16px;}
+  .navrail{position:sticky;top:0;flex-direction:row;width:100%;height:auto;justify-content:space-around;border-right:none;border-bottom:3px solid var(--ldm-orange);padding:6px 0;}
+  .navrail button::after{display:none;}
+  .navrail button.active::before{display:none;}
+  main{padding:0 14px 40px;}
+  .filters{position:static;}
+  .kpis{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:480px){.kpis{grid-template-columns:1fr;}}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<style>
+.kpi .meta{font-size:10.5px;color:#C9D2F0;margin-top:4px;}
+.kpi .v.warn{color:#FFD58A;}
+.cls{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:bold;}
+.cls.g{background:#DCFCE7;color:#166534;} .cls.b{background:#FEF3C7;color:#92400E;} .cls.c{background:#FDE2E2;color:#991B1B;}
+td.ok{color:var(--green);font-weight:bold;} td.mid{color:var(--amber);font-weight:bold;} td.bad{color:var(--red);font-weight:bold;}
+.thr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+.thr div{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--surface-2);font-size:11.5px;line-height:1.6;}
+.thr b{color:var(--title);}
+.diag{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
+.diag .insight ul{margin:6px 0 0;padding-left:18px;} .diag .insight li{margin:3px 0;}
+.impact span.k,.impact span.v,.effort span{display:block;}
+table.tb td.wrap{white-space:normal;min-width:200px;}
+.grid2>*,.grid-1-2>*{min-width:0;}
+.effort{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0;}
+.effort div{border:1px solid var(--line);border-left:4px solid var(--ldm-blue);border-radius:8px;padding:10px 12px;background:var(--surface);}
+.effort .k{font-size:10.5px;color:var(--muted);font-weight:bold;} .effort .v{font-size:20px;font-weight:bold;color:var(--title);margin-top:3px;}
+.effort .s{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+@media (max-width:1200px){.effort{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:700px){.thr{grid-template-columns:1fr;}.effort{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">LDM</div>
+    <div>
+      <h1>S.E.N.N.A. - Inventários Rotativos</h1>
+      <p>Prevenção de Perdas · realizado e acuracidade das contagens rotativas das lojas <span class="tag">· Lugar de quem faz</span></p>
+    </div>
+  </div>
+  <div class="hd-status">
+    <a href="../central/" style="color:#FFD9C2;font-weight:bold;text-decoration:none;font-size:12px;">← S.E.N.N.A. - Central</a>
+    <div>Contagens até <b id="hdUltima">—</b></div>
+    <span class="pill" id="hdDb"><span class="dot"></span><span id="hdDbTxt">Carregando base…</span></span>
+  </div>
+</header>
+
+<nav class="navrail" id="nav" aria-label="Seções">
+  <button data-page="painel" data-tip="IR Diário" aria-label="IR Diário" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/></svg></button>
+  <button data-page="diario" data-tip="Dia a dia" aria-label="Dia a dia">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg></button>
+  <button data-page="itens" data-tip="Categorias e itens" aria-label="Categorias e itens">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></button>
+  <button data-page="pessoas" data-tip="Equipes e gestores" aria-label="Equipes e gestores">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.6c2.7.2 4.6 1.9 5.3 4.9"/></svg></button>
+  <button data-page="divergencias" data-tip="Divergências" aria-label="Divergências">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg></button>
+  <button data-page="parcial" data-tip="Rotativo Parcial" aria-label="Rotativo Parcial">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/></svg></button>
+  <button data-page="gerador" data-tip="Gerar LDM Rotativo" aria-label="Gerar LDM Rotativo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></button>
+  <button data-page="dados" data-tip="Atualizar dados" aria-label="Atualizar dados">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></button>
+</nav>
+
+<main>
+  <div class="filters" id="filtros">
+    <label>Mês<select id="fMes"></select></label>
+    <label>De<select id="fIni"></select></label>
+    <label>Até<select id="fFim"></select></label>
+    <label>Distrito<select id="fDist"><option value="">Todos</option></select></label>
+    <label>Loja<select id="fLoja"><option value="">Todas</option></select></label>
+    <button class="btn ghost small" id="fLimpar">Limpar filtros</button>
+  </div>
+
+  <div id="loading" class="loading">Carregando contagens…</div>
+
+  <!-- ================= PAINEL / IR DIÁRIO ================= -->
+  <section id="page-painel" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="impact" id="impact"></div>
+    <div class="section-title">O que os números estão dizendo</div>
+    <div class="insights" id="insights"></div>
+
+    <div class="section-title">Ranking das lojas <span class="grow"></span><button class="btn small" id="expRank">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbRank"></table></div>
+      <div class="thr" id="thr"></div>
+      <div class="note" style="margin-top:8px;">Clique numa loja para ver os itens não realizados e com divergência. Clique no título de uma coluna para ordenar.</div></div>
+
+    <div class="section-title">Realizado e acuracidade por loja <span class="grow"></span>
+      <div class="chips" id="lojaModo"><span class="chip" role="button" tabindex="0" data-m="real" aria-pressed="true">Realizado</span><span class="chip" role="button" tabindex="0" data-m="sku" aria-pressed="false">Acur. SKU</span><span class="chip" role="button" tabindex="0" data-m="qtd" aria-pressed="false">Acur. Qtd</span></div></div>
+    <div class="panel"><div class="chart"><canvas id="chLojas"></canvas></div>
+      <div class="legend"><span><i style="background:#16A34A"></i>acima da meta</span><span><i style="background:#F59E0B"></i>entre o mínimo e a meta</span><span><i style="background:#C00000"></i>abaixo do mínimo</span><span><i style="background:transparent;border-top:2px dashed var(--title);height:0;"></i>meta</span><span><i style="background:transparent;border-top:2px dashed #C00000;height:0;"></i>mínimo</span></div></div>
+
+    <div class="grid2" style="margin-top:14px;">
+      <div class="panel"><h4>Status final dos itens enviados, por loja</h4><div class="chart tall"><canvas id="chStatus"></canvas></div></div>
+      <div class="panel"><h4>Distritos</h4><div class="scroll"><table class="tb" id="tbDist"></table></div>
+        <h4 style="margin-top:18px;">Por que o item não foi realizado</h4><div class="chart sm"><canvas id="chNR"></canvas></div></div>
+    </div>
+  </section>
+
+  <!-- ================= DIA A DIA ================= -->
+  <section id="page-diario" hidden>
+    <div class="section-title">Evolução diária <span class="grow"></span><span class="note" id="diaLoja"></span></div>
+    <div class="panel"><div class="chart"><canvas id="chDia"></canvas></div>
+      <div class="note">Barras: itens enviados no dia, pelo status final. Linha: realizado do dia, na escala de 0% a 100% (eixo da direita). As acuracidades por dia estão na tabela e no mapa de calor.</div></div>
+
+    <div class="section-title">Visão por dia <span class="grow"></span><button class="btn small" id="expDia">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbDia"></table></div>
+      <div class="note" style="margin-top:8px;">Fluxo do rotativo: 1ª contagem pela equipe, 2ª pela equipe, 3ª pela liderança e aprovação do gerente. Itens enviados nos últimos dias ainda podem estar dentro desse prazo.</div></div>
+
+    <div class="section-title">Mapa de calor loja x dia <span class="grow"></span>
+      <div class="chips" id="heatModo"><span class="chip" role="button" tabindex="0" data-m="real" aria-pressed="true">Realizado</span><span class="chip" role="button" tabindex="0" data-m="sku" aria-pressed="false">Acur. SKU</span><span class="chip" role="button" tabindex="0" data-m="qtd" aria-pressed="false">Acur. Qtd</span></div></div>
+    <div class="panel"><div class="scroll"><table class="heat" id="tbHeat"></table></div>
+      <div class="legend"><span><i style="background:#16A34A"></i>acima da meta</span><span><i style="background:#F59E0B"></i>entre o mínimo e a meta</span><span><i style="background:#C00000"></i>abaixo do mínimo</span><span><i style="background:var(--surface-2);border:1px solid var(--line)"></i>sem lista no dia</span></div></div>
+
+    <div class="section-title">Por semana</div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbSemana"></table></div></div>
+  </section>
+
+  <!-- ================= ITENS ================= -->
+  <section id="page-itens" hidden>
+    <div class="section-title">Acuracidade por categoria <span class="grow"></span><button class="btn small" id="expCat">Exportar Excel</button></div>
+    <div class="grid-1-2">
+      <div class="panel"><h4>Acur. Qtd por categoria (piores primeiro)</h4><div class="chart tall"><canvas id="chCat"></canvas></div></div>
+      <div class="panel"><div class="scroll v"><table class="tb" id="tbCat"></table></div></div>
+    </div>
+    <div class="section-title">Itens com maior divergência <span class="grow"></span>
+      <input type="text" id="itBusca" placeholder="Código ou parte do nome" style="width:220px;">
+      <button class="btn small" id="expItens">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll v"><table class="tb" id="tbItens"></table></div>
+      <div class="note" style="margin-top:8px;">Item que diverge em várias lojas aponta para cadastro, embalagem ou recebimento, e não só para a operação de uma loja. Clique num item para ver cada loja.</div></div>
+  </section>
+
+  <!-- ================= PESSOAS ================= -->
+  <section id="page-pessoas" hidden>
+    <div class="section-title">Quem contou <span class="grow"></span><button class="btn small" id="expCont">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll v"><table class="tb" id="tbCont"></table></div>
+      <div class="note" style="margin-top:8px;">Pessoa que finalizou a contagem do item na lista (campo UPDATED_USER). Itens pendentes ficam com o usuário que criou a lista e não entram aqui.</div></div>
+    <div class="section-title">Quem tratou as divergências <span class="grow"></span><button class="btn small" id="expGest">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll v"><table class="tb" id="tbGest"></table></div>
+      <div class="note" style="margin-top:8px;"><b>Encerrada sem 3ª contagem</b> é a divergência fechada (SHUT_DOWN) sem recontagem; no cálculo ela conta como <b>Não realizado · gestão</b>.</div></div>
+  </section>
+
+  <!-- ================= DIVERGÊNCIAS ================= -->
+  <section id="page-divergencias" hidden>
+    <div class="impact" id="divKpis"></div>
+    <div class="section-title">Divergências no período <span class="grow"></span>
+      <select id="dvStatus"><option value="">Todos os status</option></select>
+      <input type="text" id="dvBusca" placeholder="Item, nome ou gestor" style="width:220px;">
+      <button class="btn small" id="expDiv">Exportar Excel</button></div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbDiv"></table></div><div class="pager" id="dvPager"></div>
+      <div class="note" style="margin-top:6px;">Data de referência: 3ª contagem; sem ela, a abertura da divergência. <b>Vínculo</b> mostra se a divergência foi ligada a um item de lista: no mesmo dia (como a planilha faz), em dia próximo (até 2 dias antes ou 10 depois) ou sem lista na base.</div></div>
+  </section>
+
+  <!-- ================= ROTATIVO PARCIAL ================= -->
+  <section id="page-parcial" hidden>
+    <div class="section-title">Rotativo Parcial <span class="grow"></span>
+      <label style="font-size:12px;font-weight:normal;">Dia <select id="pcDia" disabled></select></label>
+      <button class="btn" id="pcPdf" disabled>Gerar PDF para as lojas</button>
+      <button class="btn ghost small" id="pcLimpar" disabled>Limpar</button></div>
+    <div class="panel">
+      <div class="upload drop" id="pcDrop">
+        <span style="font-size:22px;" aria-hidden="true">⏱️</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Envie as Listas de Contagem e a Lista de Divergência do dia em andamento</div>
+          <div class="note">Mesmos formatos da aba “Atualizar dados”. Estes arquivos servem só para montar a parcial: <b>não entram na base</b> e somem ao recarregar a página. O dia fechado você continua enviando no dia seguinte, em “Atualizar dados”.</div>
+        </div>
+        <button class="btn" id="pcBtn">Selecionar arquivos</button>
+        <input type="file" id="pcFile" accept=".xlsx,.xlsm,.xls,.xlsb,.csv" multiple>
+      </div>
+      <div id="pcRes"></div>
+    </div>
+    <div class="panel" id="pcVazio"><div class="note">Nenhuma parcial montada. Envie os arquivos acima para ver quais lojas já realizaram o rotativo do dia e quais ainda estão pendentes.</div></div>
+    <div id="pcCorpo" hidden>
+      <div class="impact" id="pcKpis"></div>
+      <div class="section-title">Situação por loja</div>
+      <div class="panel"><div class="scroll"><table class="tb" id="pcTb"></table></div>
+        <div class="note" id="pcNota" style="margin-top:8px;"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= GERAR LDM ROTATIVO ================= -->
+  <section id="page-gerador" hidden>
+    <style>
+      .gr-c{width:100%;min-width:46px;border:1px solid transparent;border-radius:5px;padding:4px 3px;font:bold 11px Arial,Helvetica,sans-serif;cursor:pointer;font-variant-numeric:tabular-nums;}
+      .gr-ok{background:#DCFCE7;color:#166534;} .gr-mid{background:#FEF3C7;color:#92400E;} .gr-bad{background:#FDE2E2;color:#991B1B;}
+      .gr-x{background:transparent;color:var(--muted);border:1px dashed var(--muted);text-decoration:line-through;font-weight:normal;}
+      .gr-c:hover{outline:2px solid var(--ldm-orange);}
+    </style>
+    <div class="section-title">Gerar arquivo LDM Rotativo <span class="grow"></span>
+      <button class="btn" id="grGerar" disabled>Gerar arquivo LDM Rotativo</button>
+      <button class="btn ghost small" id="grLimpar" disabled>Limpar</button></div>
+    <div class="panel">
+      <div class="upload drop" id="grDrop">
+        <span style="font-size:22px;" aria-hidden="true">🧰</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Envie as extrações cruas de Listas de Contagem e de Divergência</div>
+          <div class="note">Aqui você limpa o que não deve contar (por exemplo, loja sem energia no dia) e baixa um arquivo no formato LDM Rotativo, com as abas Listas_Contagem e Dados_Divergencias. <b>Nada entra na base por aqui:</b> depois de conferir, envie o arquivo gerado em “Atualizar dados”.</div>
+        </div>
+        <button class="btn" id="grBtn">Selecionar arquivos</button>
+        <input type="file" id="grFile" accept=".xlsx,.xlsm,.xls,.xlsb,.csv" multiple>
+      </div>
+      <div id="grRes"></div>
+    </div>
+    <div class="panel" id="grVazio"><div class="note">Nenhum arquivo carregado. Envie as duas extrações para ver o realizado de cada loja por dia e escolher o que retirar.</div></div>
+    <div id="grCorpo" hidden>
+      <div class="section-title">Retirar loja de um dia <span class="grow"></span>
+        <label style="font-size:12px;font-weight:normal;">Motivo da próxima retirada <input type="text" id="grMotivo" placeholder="Ex.: queda de energia" style="width:230px;"></label></div>
+      <div class="panel"><div class="scroll"><table class="tb" id="grTb"></table></div>
+        <div class="note" id="grLista" style="margin-top:8px;"></div>
+        <div class="note" id="grNota" style="margin-top:6px;"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= DADOS ================= -->
+  <section id="page-dados" hidden>
+    <div class="section-title">Adicionar extrações</div>
+    <div class="panel">
+      <div class="upload drop" id="dropUp">
+        <span style="font-size:22px;" aria-hidden="true">📤</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Envie as extrações cruas, do jeito que saem do sistema</div>
+          <div class="note">Aceita <code>fato · produtos das listas</code>, <code>fato · divergências</code> e também a própria planilha <code>LDM_Rotativo</code> (.xlsm), lendo as abas Listas_Contagem e Dados_Divergencias. O painel reconhece o tipo pelo cabeçalho, sem renomear colunas. Pode enviar vários arquivos de uma vez.</div>
+        </div>
+        <button class="btn" id="btnUp">Selecionar arquivos</button>
+        <input type="file" id="fileUp" accept=".xlsx,.xlsm,.xls,.xlsb,.csv" multiple>
+      </div>
+      <div id="resUp"></div>
+      <div class="note" style="margin-top:10px;line-height:1.7;">Cada linha é identificada pelo <code>ID</code>: se o ID já existe, a linha nova substitui a antiga (status atualizado); se não existe, é adicionada. Divergências repetidas no arquivo contam uma vez só. <span id="txtOndeCargas">As cargas ficam na base compartilhada: todos que abrem o painel veem os mesmos dados.</span></div>
+    </div>
+
+    <div class="section-title">Resumo mensal para o módulo de Acuracidades</div>
+    <div class="panel">
+      <div class="upload" style="background:transparent;">
+        <span style="font-size:22px;" aria-hidden="true">🎯</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Exporte o resumo por loja e mês da base atual</div>
+          <div class="note">Gera um Excel com itens e peças, realizados e divergentes, de cada loja em cada mês, pela mesma régua do painel. Envie esse arquivo na aba “Acuracidades” do módulo de Inventário Oficial para somar Rotativo e I.O. Exporte de novo sempre que subir cargas novas.</div>
+        </div>
+        <button class="btn" id="btnResumoMes">Exportar resumo mensal</button>
+      </div>
+    </div>
+
+    <div class="section-title">Substituir a base inteira</div>
+    <div class="panel">
+      <div class="upload drop" id="dropBase" style="background:transparent;border-color:var(--ldm-blue);">
+        <span style="font-size:22px;" aria-hidden="true">🔁</span>
+        <div style="flex:1;min-width:260px;">
+          <div class="t">Envie a base completa, nos mesmos formatos aceitos acima</div>
+          <div class="note">Use quando a extração for refeita do zero. Tudo o que existe hoje deixa de valer e passa a valer só o que vier nestes arquivos. A troca vale por tipo: se enviar só listas, as divergências atuais continuam; se enviar só divergências, as listas continuam. Para desfazer, exclua a carga no histórico abaixo.</div>
+        </div>
+        <button class="btn blue" id="btnBase">Selecionar base</button>
+        <input type="file" id="fileBase" accept=".xlsx,.xlsm,.xls,.xlsb,.csv" multiple>
+      </div>
+      <div id="resBase"></div>
+    </div>
+
+    <div class="section-title">Qualidade das bases</div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbQual"></table></div></div>
+
+    <div class="section-title">Metas da classificação</div>
+    <div class="panel">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;" id="metasForm"></div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn blue small" id="metaSalvar">Salvar metas</button>
+        <button class="btn ghost small" id="metaPadrao">Voltar às metas padrão</button>
+        <span class="note">Gabarito!: todos os indicadores acima da meta. Crítica: qualquer indicador abaixo do mínimo. Boa: o restante.</span>
+      </div>
+    </div>
+
+    <div class="section-title">Histórico de cargas</div>
+    <div class="panel"><div class="scroll"><table class="tb" id="tbCargas"></table></div>
+      <div style="margin-top:10px;"><button class="btn ghost small" id="btnReset">Voltar só para a base embutida</button></div></div>
+  </section>
+</main>
+
+<div class="modal" id="mdDet" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="mdDetT">
+    <div class="modal-head"><div><h3 id="mdDetT"></h3><div class="sub" id="mdDetS"></div></div><button class="modal-close" data-close aria-label="Fechar">✕</button></div>
+    <div class="modal-body"><div class="impact" id="mdDetK"></div><div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;"><span class="note" id="mdDetN"></span><span style="flex:1;"></span><button class="btn small" id="mdDetExp">Exportar Excel</button></div><div class="scroll"><table class="tb" id="mdDetTb"></table></div></div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<footer>Loja do Mecânico · Prevenção de Perdas · Base: listas de contagem rotativa e divergências · Confidencial</footer>
+
+<script>
+/* S.E.N.N.A. · confirmação na própria página (o confirm() do navegador é bloqueado dentro do visualizador) */
+function pergunta(msg){return new Promise(res=>{
+  const bg=document.createElement('div');
+  bg.style.cssText='position:fixed;inset:0;background:rgba(0,10,50,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const bx=document.createElement('div');bx.setAttribute('role','dialog');bx.setAttribute('aria-modal','true');
+  bx.style.cssText='background:#fff;color:#1E293B;max-width:460px;width:100%;border-radius:12px;border-top:6px solid #FE5000;padding:22px 22px 18px;font-family:Arial,Helvetica,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.35);';
+  const p=document.createElement('div');p.textContent=msg;p.style.cssText='white-space:pre-wrap;font-size:14px;line-height:1.5;margin-bottom:18px;';
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;justify-content:flex-end;';
+  const mk=(t,bgc,c,bd)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='font:bold 13px Arial,Helvetica,sans-serif;padding:9px 18px;border-radius:8px;cursor:pointer;background:'+bgc+';color:'+c+';border:1px solid '+bd+';';return b;};
+  const no=mk('Cancelar','#fff','#001A72','#001A72'),ok=mk('Confirmar','#FE5000','#fff','#FE5000');
+  const fim=v=>{document.removeEventListener('keydown',tecla,true);bg.remove();res(v);};
+  const tecla=e=>{if(e.key==='Escape'){e.stopPropagation();fim(false);}};
+  no.onclick=()=>fim(false);ok.onclick=()=>fim(true);bg.onclick=e=>{if(e.target===bg)fim(false);};
+  document.addEventListener('keydown',tecla,true);
+  row.append(no,ok);bx.append(p,row);bg.append(bx);document.body.append(bg);ok.focus();});}
+</script>
+<script>
+/* S.E.N.N.A. · cadastro de produtos e custos (chave: Código BSeller) */
+let CAD_B64=null; /* vem da base protegida: embutidos/cadastro-produtos */
+</script>
+<script>
+let PAYLOAD=null; /* vem da base protegida: embutidos/rotativo-payload */
+const LOJAS=[{"num": 1, "nome": "Franca", "distrito": "SP Interior e MG"}, {"num": 8, "nome": "Jundiaí", "distrito": "SP Interior e MG"}, {"num": 9, "nome": "Belo Horizonte", "distrito": "SP Interior e MG"}, {"num": 11, "nome": "Limeira", "distrito": "SP Interior e MG"}, {"num": 12, "nome": "Ribeirão Preto", "distrito": "SP Interior e MG"}, {"num": 15, "nome": "Praia Grande", "distrito": "Grande São Paulo"}, {"num": 16, "nome": "Sorocaba", "distrito": "SP Interior e MG"}, {"num": 17, "nome": "Campinas", "distrito": "SP Interior e MG"}, {"num": 19, "nome": "Araraquara", "distrito": "SP Interior e MG"}, {"num": 21, "nome": "Jacareí", "distrito": "Grande São Paulo"}, {"num": 22, "nome": "Presidente Prudente", "distrito": "SP Interior e MG"}, {"num": 23, "nome": "Mogi das Cruzes", "distrito": "Grande São Paulo"}, {"num": 24, "nome": "Guarulhos", "distrito": "Grande São Paulo"}, {"num": 25, "nome": "Marília", "distrito": "SP Interior e MG"}, {"num": 26, "nome": "Barueri", "distrito": "Grande São Paulo"}, {"num": 27, "nome": "Embu das Artes", "distrito": "Grande São Paulo"}, {"num": 28, "nome": "Osasco", "distrito": "Grande São Paulo"}, {"num": 29, "nome": "Piracicaba", "distrito": "SP Interior e MG"}, {"num": 31, "nome": "Interlagos", "distrito": "Grande São Paulo"}, {"num": 32, "nome": "Outlet", "distrito": "Grande São Paulo"}];
+</script>
+<script>
+"use strict";
+/* ---------------- utilidades ---------------- */
+const $=s=>document.querySelector(s);
+const DAY=86400000;
+const DIAS=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const nf0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+const fN=v=>v==null?'—':nf0.format(v);
+const nf2=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fR=v=>(v==null||!isFinite(v))?'—':'R$ '+nf2.format(v);
+let CAD=null;
+async function carregarCadastro(){
+  try{const b=await gunzipB64(CAD_B64||(CAD_B64=await SENNA.embutido('cadastro-produtos')));const idx=new Map();for(let k=0;k<b.cod.length;k++)idx.set(b.cod[k],k);b.idx=idx;CAD=b;}
+  catch(e){console.warn('cadastro de produtos ilegível',e);CAD=null;}
+}
+function cadDe(cod){if(!CAD)return null;const k=CAD.idx.get(parseInt(cod,10));if(k===undefined)return null;
+  return {d:CAD.desc[k],cu:CAD.custo[k],cat:CAD.cats[CAD.cat[k]],at:CAD.st[k]===1};}
+const fP=(v,d=1)=>(v==null||!isFinite(v))?'—':(v<0?'−':'')+Math.abs(v*100).toFixed(d).replace('.',',')+'%';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const dkey=t=>Math.floor(t/DAY);
+const dDate=d=>new Date(d*DAY);
+const fD=d=>{const x=dDate(d);return String(x.getUTCDate()).padStart(2,'0')+'/'+String(x.getUTCMonth()+1).padStart(2,'0')+'/'+x.getUTCFullYear();};
+const fDs=d=>{const x=dDate(d);return x.getUTCDate()+'/'+(x.getUTCMonth()+1);};
+const fDH=t=>{if(t==null)return '—';const x=new Date(t);return fD(dkey(t))+' '+String(x.getUTCHours()).padStart(2,'0')+':'+String(x.getUTCMinutes()).padStart(2,'0');};
+const mkOf=d=>{const x=dDate(d);return x.getUTCFullYear()*12+x.getUTCMonth();};
+const mkLabel=mk=>MESES[mk%12]+' '+Math.floor(mk/12);
+function weeknum(d){const x=dDate(d);const y=x.getUTCFullYear();const j1=Date.UTC(y,0,1)/DAY;const wd=dDate(j1).getUTCDay();return Math.floor((d-j1+wd)/7)+1;}
+function toast(msg,ms=4200){const t=$('#toast');t.textContent=msg;t.classList.add('vis');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('vis'),ms);}
+const lojaNome=n=>(LOJAS.find(l=>l.num===n)||{}).nome||('Loja '+n);
+const lojaDist=n=>(LOJAS.find(l=>l.num===n)||{}).distrito||'Sem distrito';
+async function gunzipB64(b64){
+  const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const st=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return JSON.parse(await new Response(st).text());
+}
+
+/* ---------------- estado ---------------- */
+const ST_LBL={RSD:'Realizado sem divergência',RCD:'Realizado com divergência',NRO:'Não realizado · operação',NRG:'Não realizado · gestão',EAP:'Em aprovação'};
+const ST_COR={RSD:'#16A34A',RCD:'#F59E0B',NRO:'#FE5000',NRG:'#C00000',EAP:'#94A3B8'};
+const DIV_LBL={APPROVED_WITH_DIVERGENCE:'Aprovada com divergência',SHUT_DOWN:'Encerrada',DIVERGENCE_DISAPPROVED:'Divergência reprovada'};
+const METAS_PADRAO={rOk:95,qOk:92,sOk:92,rMin:90,qMin:88,sMin:88};
+let METAS={...METAS_PADRAO};
+let BASE_ATIVA={listas:'embutida',divs:'embutida'};
+let BASE=null, CARGAS=[], LISTAS=[], DIVS=[], CORTE=0, DIAS_DISP=[];
+const F={mes:'',ini:null,fim:null,dist:'',loja:''};
+let R=null; // resultado do cálculo
+const charts={};
+const sorts={};
+let pagina='painel';
+
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+/* ---------------- base embutida ---------------- */
+function decodeBase(B){
+  const L=[],D=[];const P=B.people,C=B.cats,S=B.subs,PC=B.prodCode,PD=B.prodDesc;
+  const l=B.L;for(let i=0;i<l.id.length;i++)L.push({id:l.id[i],loja:l.loja[i],t:l.t[i],user:P[l.u[i]],cat:C[l.c[i]],sub:S[l.s[i]],prod:PC[l.p[i]],desc:PD[l.p[i]],st:B.ST[l.st[i]],q:l.q[i],bs:l.bs[i]});
+  const d=B.D;for(let i=0;i<d.id.length;i++)D.push({id:d.id[i],loja:d.loja[i],prod:PC[d.p[i]],desc:PD[d.p[i]],st:B.DST[d.st[i]],tbs:d.tbs[i],tc:d.tc[i],tdt:d.tdt[i],cdt:d.cdt[i],gestor:P[d.g[i]],lider:P[d.l[i]],cont1:P[d.c1[i]],f1:d.f1[i],f2:d.f2[i]});
+  return {L,D};
+}
+function rebuild(){
+  CARGAS.sort((a,b)=>((a.quando||0)-(b.quando||0))||String(a.key).localeCompare(String(b.key),undefined,{numeric:true}));
+  let iL=-1,iD=-1;CARGAS.forEach((c,i)=>{if(c.modo==='substituir'){if((c.listas||[]).length)iL=i;if((c.divs||[]).length)iD=i;}});
+  const mL=new Map();if(iL<0)BASE.L.forEach(r=>mL.set(r.id,r));
+  const mD=new Map();if(iD<0)BASE.D.forEach(r=>{if(!mD.has(r.id))mD.set(r.id,r);});
+  CARGAS.forEach((c,i)=>{if(i>=iL)(c.listas||[]).forEach(r=>mL.set(r.id,r));if(i>=iD)(c.divs||[]).forEach(r=>mD.set(r.id,r));});
+  BASE_ATIVA={listas:iL<0?'embutida':CARGAS[iL].nome,divs:iD<0?'embutida':CARGAS[iD].nome};
+  LISTAS=[...mL.values()].sort((a,b)=>a.id-b.id);
+  DIVS=[...mD.values()];
+  CORTE=0;LISTAS.forEach(r=>{if(r.t>CORTE)CORTE=r.t;});
+  const ds=new Set();LISTAS.forEach(r=>ds.add(dkey(r.t)));
+  DIAS_DISP=[...ds].sort((a,b)=>a-b);
+  // índice de divergências
+  DIVS.forEach((d,i)=>{d.ord=i;d.ref=(d.tdt!=null?d.tdt:d.cdt);d.key=d.tdt!=null?(d.loja+'_'+d.prod+'_'+dkey(d.tdt)):null;});
+  $('#hdUltima').textContent=CORTE?fDH(CORTE):'—';
+  const n=CARGAS.length,sub=iL>=0||iD>=0;
+  $('#hdDb').className='pill '+(n?'ok':'warn');
+  $('#hdDbTxt').textContent=sub?('Base substituída em '+fD(dkey(CARGAS[Math.max(iL,iD)].quando))+' · '+n+(n>1?' cargas':' carga')):n?('Base embutida + '+n+(n>1?' cargas':' carga')+(SDB?' compartilhada'+(n>1?'s':''):' neste navegador')):'Base embutida de 04/11/2026';
+}
+
+/* ---------------- cálculo ---------------- */
+function vdPlanilha(d){
+  const diff=(d.tbs||0)-(d.tc||0);
+  if(diff===0)return 'RSD';
+  if(d.st==='SHUT_DOWN')return 'NRG';
+  return 'RCD';
+}
+function vdAjustada(d){
+  if(d.st==='SHUT_DOWN'&&d.tc==null)return 'NRG';
+  return vdPlanilha(d);
+}
+function compute(){
+  const ini=F.ini, fim=F.fim, aj=true;
+  // 1) período (antes de distrito/loja, como a tabela Listas inteira)
+  let rows=LISTAS.filter(r=>{const d=dkey(r.t);return d>=ini&&d<=fim;});
+  if(F.dist)rows=rows.filter(r=>lojaDist(r.loja)===F.dist);
+  if(F.loja)rows=rows.filter(r=>r.loja===+F.loja);
+  // 2) "Validador 1 = Última": maior ID por loja + item
+  const mx=new Map();rows.forEach(r=>{const k=r.loja+'_'+r.prod;if(!mx.has(k)||r.id>mx.get(k))mx.set(k,r.id);});
+  const ult=rows.filter(r=>mx.get(r.loja+'_'+r.prod)===r.id);
+  // 3) índices de divergência
+  const byKey=new Map(), byLP=new Map();
+  DIVS.forEach(d=>{ if(d.key&&!byKey.has(d.key))byKey.set(d.key,d); const k=d.loja+'_'+d.prod; if(!byLP.has(k))byLP.set(k,[]); byLP.get(k).push(d); });
+  const usadas=new Set();
+  const out=ult.map(r=>{
+    let si;
+    if(r.st==='PENDING'||r.st==='SHUTDOWN')si='NRO';else if(r.st==='FINISHED')si='RSD';else si='RCD';
+    let sf=si, div=null, vinc='';
+    if(si==='RCD'){
+      const k=r.loja+'_'+r.prod+'_'+dkey(r.t);
+      div=byKey.get(k)||null; vinc=div?'mesmo dia':'';
+      if(!div&&aj){
+        const c=(byLP.get(r.loja+'_'+r.prod)||[]).filter(d=>d.ref!=null&&d.ref-r.t>=-2*DAY&&d.ref-r.t<=10*DAY);
+        if(c.length){c.sort((a,b)=>Math.abs(a.ref-r.t)-Math.abs(b.ref-r.t));div=c[0];vinc='dia próximo';}
+      }
+      if(div){sf=aj?vdAjustada(div):vdPlanilha(div);usadas.add(div.id);}
+      else if(aj&&(CORTE-r.t)<=4*DAY){sf='EAP';}
+      else sf='NRG';
+    }
+    let est=0,dv=0,sg=0;
+    if(sf!=='NRO'&&sf!=='NRG'&&sf!=='EAP'){
+      est=r.bs||0;
+      if(si==='RCD')sg=(div&&sf==='RCD')?(div.tc||0)-(div.tbs||0):0;
+      else sg=(r.q||0)-(r.bs||0);
+      dv=Math.abs(sg);
+    }
+    /* cadastro de produtos: custo, categoria S.E.N.N.A. e status pelo Código BSeller */
+    const pc=cadDe(r.prod);const cu=pc&&pc.cu>0?pc.cu:null;
+    return {...r,si,sf,div,vinc,est,dv,dia:dkey(r.t),cad:!!pc,cu:pc?pc.cu:null,catS:pc?pc.cat:'Fora do cadastro',stt:pc?(pc.at?'Ativo':'Fora de linha'):'—',
+      vest:cu?est*cu:0,vdv:cu?dv*cu:0,vfal:cu&&sg<0?-sg*cu:0,vsob:cu&&sg>0?sg*cu:0,semCusto:(est>0||dv>0)&&!cu};
+  });
+  return {rows:out,usadas,todas:rows.length};
+}
+function agg(rows){
+  const a={tot:0,RSD:0,RCD:0,NRO:0,NRG:0,EAP:0,est:0,dv:0,vest:0,vdv:0,vfal:0,vsob:0,semCusto:0};
+  rows.forEach(r=>{a.tot++;a[r.sf]++;a.est+=r.est;a.dv+=r.dv;a.vest+=r.vest||0;a.vdv+=r.vdv||0;a.vfal+=r.vfal||0;a.vsob+=r.vsob||0;if(r.semCusto)a.semCusto++;});
+  a.val=a.vest>0?1-a.vdv/a.vest:null;
+  const base=a.tot-a.EAP;
+  a.real=base>0?((a.NRO+a.NRG)===0?1:1-(a.NRO+a.NRG)/base):null;
+  a.qtd=a.est>0?1-a.dv/a.est:null;
+  a.sku=(a.RSD+a.RCD)>0?1-a.RCD/(a.RSD+a.RCD):null;
+  a.realizados=a.RSD+a.RCD;
+  return a;
+}
+function skuRede(a){return a.sku;}
+function score(a){
+  const M=METAS;if(a.real==null)return null;
+  const q=a.qtd??1,s=a.sku??1;
+  if(a.real>M.rOk/100&&q>M.qOk/100&&s>M.sOk/100)return 100;
+  if(a.real<M.rMin/100||q<M.qMin/100||s<M.sMin/100)return 0;
+  return 50;
+}
+const clsOf=sc=>sc==null?'':sc===100?'Gabarito!':sc===50?'Boa':'Crítica';
+const clsTag=sc=>sc==null?'—':'<span class="cls '+(sc===100?'g':sc===50?'b':'c')+'">'+clsOf(sc)+'</span>';
+function tone(v,ok,min){if(v==null)return '';return v>ok/100?'ok':v<min/100?'bad':'mid';}
+
+function recalc(){
+  const c=compute();
+  const porLoja=new Map();c.rows.forEach(r=>{if(!porLoja.has(r.loja))porLoja.set(r.loja,[]);porLoja.get(r.loja).push(r);});
+  const lojas=[...porLoja.entries()].map(([n,rs])=>{const a=agg(rs);a.num=n;a.nome=lojaNome(n);a.dist=lojaDist(n);a.score=score(a);a.cls=clsOf(a.score);return a;});
+  const rede=agg(c.rows);rede.skuR=skuRede(rede);
+  R={...c,lojas,rede};
+}
+
+/* ---------------- filtros ---------------- */
+function setupFilters(){
+  const meses=[...new Set(DIAS_DISP.map(mkOf))].sort((a,b)=>a-b);
+  $('#fMes').innerHTML=meses.map(m=>`<option value="${m}">${mkLabel(m)}</option>`).join('')+'<option value="livre">Período livre</option>';
+  const opt=DIAS_DISP.map(d=>`<option value="${d}">${fD(d)} · ${DIAS[dDate(d).getUTCDay()].slice(0,3)}</option>`).join('');
+  $('#fIni').innerHTML=opt;$('#fFim').innerHTML=opt;
+  const dists=[...new Set(LOJAS.map(l=>l.distrito))].sort();
+  $('#fDist').innerHTML='<option value="">Todos</option>'+dists.map(d=>`<option>${esc(d)}</option>`).join('');
+  fillLojas();
+  if(!F.mes||(!meses.includes(+F.mes)&&F.mes!=='livre'))F.mes=String(meses[meses.length-1]);
+  applyMes();
+  $('#fMes').value=F.mes;
+}
+function fillLojas(){
+  const ls=[...new Set(LISTAS.map(r=>r.loja))].sort((a,b)=>a-b).filter(n=>!F.dist||lojaDist(n)===F.dist);
+  $('#fLoja').innerHTML='<option value="">Todas</option>'+ls.map(n=>`<option value="${n}">${n} · ${esc(lojaNome(n))}</option>`).join('');
+  if(F.loja&&!ls.includes(+F.loja))F.loja='';
+  $('#fLoja').value=F.loja;
+}
+function applyMes(){
+  if(F.mes!=='livre'){
+    const ds=DIAS_DISP.filter(d=>mkOf(d)===+F.mes);
+    F.ini=ds[0];F.fim=ds[ds.length-1];
+  }else if(F.ini==null){F.ini=DIAS_DISP[0];F.fim=DIAS_DISP[DIAS_DISP.length-1];}
+  $('#fIni').value=F.ini;$('#fFim').value=F.fim;
+}
+function bindFilters(){
+  $('#fMes').onchange=e=>{F.mes=e.target.value;applyMes();refresh();};
+  $('#fIni').onchange=e=>{F.ini=+e.target.value;if(F.ini>F.fim){F.fim=F.ini;$('#fFim').value=F.fim;}F.mes='livre';$('#fMes').value='livre';refresh();};
+  $('#fFim').onchange=e=>{F.fim=+e.target.value;if(F.fim<F.ini){F.ini=F.fim;$('#fIni').value=F.ini;}F.mes='livre';$('#fMes').value='livre';refresh();};
+  $('#fDist').onchange=e=>{F.dist=e.target.value;fillLojas();refresh();};
+  $('#fLoja').onchange=e=>{F.loja=e.target.value;refresh();};
+  $('#fLimpar').onclick=()=>{F.dist='';F.loja='';$('#fDist').value='';fillLojas();const m=[...new Set(DIAS_DISP.map(mkOf))];F.mes=String(m[m.length-1]);$('#fMes').value=F.mes;applyMes();refresh();};
+}
+function chipGroup(sel,attr,cb){
+  const g=$(sel);
+  const act=el=>{g.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===el?'true':'false'));cb(el.dataset[attr]);};
+  g.addEventListener('click',e=>{const c=e.target.closest('.chip');if(c)act(c);});
+  g.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('chip')){e.preventDefault();act(e.target);}});
+}
+function setChip(sel,attr,v){$(sel).querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset[attr]===v?'true':'false'));}
+
+/* ---------------- tabelas ---------------- */
+function table(id,cols,rows,opt={}){
+  const el=$(id);const key=id;
+  const s=sorts[key]||opt.sort||null;
+  let data=rows.slice();
+  if(s){const c=cols.find(c=>c.k===s.k);if(c){const f=c.sv||(r=>r[c.k]);data.sort((a,b)=>{let x=f(a),y=f(b);if(x==null)x=s.d>0?Infinity:-Infinity;if(y==null)y=s.d>0?Infinity:-Infinity;return (x>y?1:x<y?-1:0)*s.d;});}}
+  if(opt.limit)data=data.slice(0,opt.limit);
+  let h='<thead><tr>'+cols.map(c=>`<th class="${c.n?'n ':''}sort" data-k="${c.k}" title="${esc(c.tip||'')}">${c.t}${s&&s.k===c.k?(s.d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>';
+  h+=data.map((r,i)=>`<tr class="${opt.click?'click':''}" data-i="${rows.indexOf(r)}">`+cols.map(c=>{const v=c.f?c.f(r,i):r[c.k];const cl=(c.n?'n ':'')+(c.cl?c.cl(r):'');return `<td class="${cl}">${v??'—'}</td>`;}).join('')+'</tr>').join('');
+  if(opt.total)h+='<tr class="tot">'+cols.map(c=>{const v=opt.total[c.k];return `<td class="${c.n?'n':''}">${v??''}</td>`;}).join('')+'</tr>';
+  if(!data.length)h+=`<tr><td colspan="${cols.length}" class="note" style="padding:16px;">Nenhum registro no filtro. Amplie o período ou limpe os filtros.</td></tr>`;
+  el.innerHTML=h+'</tbody>';
+  el.querySelectorAll('th.sort').forEach(th=>th.onclick=()=>{const k=th.dataset.k;const cur=sorts[key]||opt.sort;sorts[key]={k,d:cur&&cur.k===k?-cur.d:-1};table(id,cols,rows,opt);});
+  if(opt.click)el.querySelectorAll('tr.click').forEach(tr=>tr.onclick=()=>opt.click(rows[+tr.dataset.i]));
+}
+function exportXlsx(nome,cols,rows){
+  try{
+    const aoa=[cols.map(c=>c.t.replace(/<[^>]+>/g,''))].concat(rows.map(r=>cols.map(c=>{const v=c.x?c.x(r):r[c.k];return v==null?'':v;})));
+    const ws=XLSX.utils.aoa_to_sheet(aoa);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');
+    const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+    (async()=>{let dl=null;try{dl=window.claude&&await window.claude.use('downloads');}catch(e){}
+      if(!dl){toast('Exportação disponível só no painel publicado no claude.ai.');return;}
+      try{await dl.save({filename:nome+'.xlsx',data:buf});}catch(e){if(!e||e.code!=='declined')toast('Não foi possível exportar ('+(e&&e.code||'erro')+').');}})();
+  }catch(e){toast('Não foi possível exportar: '+e.message);}
+}
+
+/* ---------------- gráficos ---------------- */
+function mkChart(id,cfg){
+  if(charts[id])charts[id].destroy();
+  const txt=css('--text'),line=css('--line'),mut=css('--muted');
+  Chart.defaults.color=mut;Chart.defaults.borderColor=line;Chart.defaults.font.family='Arial,Helvetica,sans-serif';Chart.defaults.font.size=11;
+  cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{labels:{color:txt,boxWidth:12}}}},cfg.options||{});
+  charts[id]=new Chart(document.getElementById(id),cfg);
+}
+const azul=()=>css('--title')||'#001A72';
+const pctAxis=(min)=>({min,max:1,ticks:{callback:v=>fP(v,0)}});
+
+/* ---------------- PAINEL ---------------- */
+function renderPainel(){
+  const a=R.rede, M=METAS, L=R.lojas;
+  const gab=L.filter(l=>l.score===100), cri=L.filter(l=>l.score===0);
+  const k=(t,v,cls,s,badge,meta)=>`<div class="kpi">${badge?`<span class="badge">${badge}</span>`:''}<div class="k">${t}</div><div class="v ${cls||''}">${v}</div><div class="s">${s||''}</div>${meta?`<div class="meta">${meta}</div>`:''}</div>`;
+  const cl=(v,ok,min)=>v==null?'':v>ok/100?'pos':v<min/100?'neg':'warn';
+  $('#kpis').innerHTML=
+    k('Realizado',fP(a.real),cl(a.real,M.rOk,M.rMin),`<b>${fN(a.realizados)}</b> de ${fN(a.tot-a.EAP)} itens enviados`,'meta '+M.rOk+'%')+
+    k('Acuracidade Qtd',fP(a.qtd),cl(a.qtd,M.qOk,M.qMin),`<b>${fN(a.dv)}</b> peças divergentes em ${fN(a.est)} no sistema`,'meta '+M.qOk+'%')+
+    k('Acuracidade SKU',fP(a.skuR),cl(a.skuR,M.sOk,M.sMin),`<b>${fN(a.RCD)}</b> itens com divergência em ${fN(a.realizados)} realizados`,'meta '+M.sOk+'%')+
+    k('Lojas Gabarito!',fN(gab.length),'pos',`de ${L.length} lojas com lista no período`,'AAA')+
+    k('Lojas críticas',fN(cri.length),cri.length?'neg':'pos',cri.length?cri.slice(0,4).map(l=>esc(l.nome)).join(', '):'Nenhuma loja abaixo do mínimo','UTI');
+  const im=(t,v)=>`<div><span class="k">${t}</span><span class="v">${v}</span></div>`;
+  $('#impact').innerHTML=im('Itens enviados',fN(a.tot))+im('Não realizados · operação',fN(a.NRO))+im('Não realizados · gestão',fN(a.NRG))+
+    im('Em aprovação (até 4 dias)',fN(a.EAP))+
+    im('Divergência a custo',fR(a.vdv)+' <small>'+fP(a.val,2)+' acur. valor</small>')+im('Faltas a custo',fR(a.vfal))+im('Sobras a custo',fR(a.vsob));
+  renderInsights();
+  // ranking
+  const cols=[
+    {k:'pos',t:'#',n:1,f:(r,i)=>i+1,sv:r=>0},
+    {k:'dist',t:'Distrito'},
+    {k:'num',t:'Nº',n:1},
+    {k:'nome',t:'Loja',f:r=>`<b>${esc(r.nome)}</b>`},
+    {k:'tot',t:'Enviados',n:1,f:r=>fN(r.tot-r.EAP)},
+    {k:'realizados',t:'Realizados',n:1,f:r=>fN(r.realizados)},
+    {k:'real',t:'Realizado',n:1,f:r=>fP(r.real),cl:r=>tone(r.real,M.rOk,M.rMin),x:r=>r.real},
+    {k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin),x:r=>r.qtd},
+    {k:'sku',t:'Acur. SKU',n:1,f:r=>fP(r.sku),cl:r=>tone(r.sku,M.sOk,M.sMin),x:r=>r.sku},
+    {k:'NRO',t:'Ñ real. oper.',n:1},
+    {k:'NRG',t:'Ñ real. gestão',n:1},
+    {k:'RCD',t:'Itens c/ div.',n:1},
+    {k:'dv',t:'Div. peças',n:1},
+    {k:'vdv',t:'Div. a custo',n:1,tip:'Peças divergentes × custo unitário do cadastro de produtos (Código BSeller). Soma faltas e sobras em valor absoluto.',f:r=>fR(r.vdv),x:r=>+r.vdv.toFixed(2)},
+    {k:'val',t:'Acur. Valor',n:1,tip:'1 − divergência a custo ÷ estoque contado a custo. Indicador informativo: não entra na classificação.',f:r=>fP(r.val),x:r=>r.val},
+    {k:'score',t:'🚀',n:1,tip:'100 = Gabarito!, 50 = Boa, 0 = Crítica'},
+    {k:'cls',t:'Classificação',f:r=>clsTag(r.score),sv:r=>r.score}];
+  table('#tbRank',cols,L,{sort:{k:'score',d:1},click:l=>abrirLoja(l.num),
+    total:{nome:'<b>Rede</b>',tot:fN(a.tot-a.EAP),realizados:fN(a.realizados),real:fP(a.real),qtd:fP(a.qtd),sku:fP(a.skuR),NRO:fN(a.NRO),NRG:fN(a.NRG),RCD:fN(a.RCD),dv:fN(a.dv),vdv:fR(a.vdv),val:fP(a.val)}});
+  $('#expRank').onclick=()=>exportXlsx('IR_ranking_lojas',cols.filter(c=>c.k!=='pos'),L);
+  $('#thr').innerHTML=[['Realizado',M.rOk,M.rMin],['Acuracidade Qtd',M.qOk,M.qMin],['Acuracidade SKU',M.sOk,M.sMin]].map(([t,o,m])=>
+    `<div><b>${t}</b><br><span class="res-ok">acima de ${o}%</span> conta para Gabarito! · <span class="res-warn">${m}% a ${o}%</span> segura em Boa · <span class="res-err">abaixo de ${m}%</span> leva a Crítica</div>`).join('');
+  // gráfico lojas
+  renderChLojas();
+  // status stacked
+  const So=L.slice().sort((x,y)=>(x.real??0)-(y.real??0));
+  const sts=['RSD','RCD','NRO','NRG','EAP'];
+  mkChart('chStatus',{type:'bar',data:{labels:So.map(l=>l.nome),datasets:sts.map(s=>({label:ST_LBL[s],data:So.map(l=>l.tot?l[s]/l.tot:0),backgroundColor:ST_COR[s],_n:So.map(l=>l[s])}))},
+    options:{indexAxis:'y',scales:{x:{stacked:true,min:0,max:1,ticks:{callback:v=>fP(v,0)}},y:{stacked:true}},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+fN(c.dataset._n[c.dataIndex])+' ('+fP(c.raw)+')'}}}}});
+  // distritos
+  const ds=[...new Set(L.map(l=>l.dist))].map(d=>{const rs=R.rows.filter(r=>lojaDist(r.loja)===d);const x=agg(rs);x.dist=d;x.n=L.filter(l=>l.dist===d).length;x.gab=L.filter(l=>l.dist===d&&l.score===100).length;return x;});
+  table('#tbDist',[{k:'dist',t:'Distrito'},{k:'n',t:'Lojas',n:1},{k:'gab',t:'Gabarito!',n:1},{k:'real',t:'Realizado',n:1,f:r=>fP(r.real),cl:r=>tone(r.real,M.rOk,M.rMin)},{k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin)},{k:'sku',t:'Acur. SKU',n:1,f:r=>fP(r.sku),cl:r=>tone(r.sku,M.sOk,M.sMin)}],ds);
+  const nrL=L.filter(l=>l.NRO+l.NRG>0).sort((x,y)=>(y.NRO+y.NRG)-(x.NRO+x.NRG)).slice(0,8);
+  mkChart('chNR',{type:'bar',data:{labels:nrL.map(l=>l.nome),datasets:[{label:ST_LBL.NRO,data:nrL.map(l=>l.NRO),backgroundColor:ST_COR.NRO},{label:ST_LBL.NRG,data:nrL.map(l=>l.NRG),backgroundColor:ST_COR.NRG}]},
+    options:{indexAxis:'y',scales:{x:{stacked:true},y:{stacked:true}}}});
+}
+let lojaModo='real';
+function renderChLojas(){
+  const M=METAS;const L=R.lojas;
+  const cfg={real:['Realizado',M.rOk,M.rMin],sku:['Acur. SKU',M.sOk,M.sMin],qtd:['Acur. Qtd',M.qOk,M.qMin]}[lojaModo];
+  const Ls=L.filter(l=>l[lojaModo]!=null).sort((x,y)=>x[lojaModo]-y[lojaModo]);
+  const cor=v=>v>cfg[1]/100?'#16A34A':v<cfg[2]/100?'#C00000':'#F59E0B';
+  const lo=Math.min(cfg[2]/100,...Ls.map(l=>l[lojaModo]));
+  mkChart('chLojas',{type:'bar',data:{labels:Ls.map(l=>l.nome),datasets:[
+    {label:cfg[0],data:Ls.map(l=>l[lojaModo]),backgroundColor:Ls.map(l=>cor(l[lojaModo])),order:2},
+    {type:'line',label:'Meta '+cfg[1]+'%',data:Ls.map(()=>cfg[1]/100),borderColor:azul(),borderDash:[6,4],pointRadius:0,borderWidth:1.5,order:1},
+    {type:'line',label:'Mínimo '+cfg[2]+'%',data:Ls.map(()=>cfg[2]/100),borderColor:'#C00000',borderDash:[3,3],pointRadius:0,borderWidth:1.5,order:1}]},
+    options:{scales:{y:pctAxis(Math.max(0,Math.floor((lo-0.02)*20)/20))},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fP(c.raw)}}}}});
+}
+function renderInsights(){
+  const a=R.rede,L=R.lojas,M=METAS,out=[];
+  const per=fD(F.ini)+(F.fim!==F.ini?' a '+fD(F.fim):'');
+  const gab=L.filter(l=>l.score===100).length;
+  out.push(['blue','Fotografia do período',`De ${per}, a rede recebeu <b>${fN(a.tot)}</b> itens em lista e realizou <b>${fP(a.real)}</b>. <b>${gab} de ${L.length}</b> lojas fecharam no Gabarito!`]);
+  const cri=L.filter(l=>l.score===0);
+  if(cri.length){
+    const t=cri.map(l=>{const f=[];if(l.real<M.rMin/100)f.push('realizado '+fP(l.real));if((l.qtd??1)<M.qMin/100)f.push('acur. qtd '+fP(l.qtd));if((l.sku??1)<M.sMin/100)f.push('acur. SKU '+fP(l.sku));return `<b>${esc(l.nome)}</b> (${f.join(', ')})`;}).join('; ');
+    out.push(['red','Lojas na UTI',`${t}. Basta um indicador abaixo do mínimo para a loja cair para Crítica.`]);
+  }
+  const nr=a.NRO+a.NRG;
+  if(nr){
+    const topNR=L.slice().sort((x,y)=>(y.NRO+y.NRG)-(x.NRO+x.NRG)).slice(0,3);
+    const share=topNR.reduce((s,l)=>s+l.NRO+l.NRG,0)/nr;
+    out.push(['','Onde o realizado escapa',`<b>${fN(nr)}</b> itens não foram realizados: ${fN(a.NRO)} ficaram pendentes na loja (operação) e ${fN(a.NRG)} foram encerrados sem conclusão pela gestão. ${topNR.map(l=>esc(l.nome)).join(', ')} concentram <b>${fP(share,0)}</b> deles.`]);
+  }
+  const quase=L.filter(l=>l.score===50).map(l=>{const g=[];if(l.real<=M.rOk/100)g.push(['realizado',l.real,M.rOk]);if((l.qtd??1)<=M.qOk/100)g.push(['acur. qtd',l.qtd,M.qOk]);if((l.sku??1)<=M.sOk/100)g.push(['acur. SKU',l.sku,M.sOk]);return {l,g};}).filter(x=>x.g.length===1).sort((x,y)=>(x.g[0][2]/100-x.g[0][1])-(y.g[0][2]/100-y.g[0][1]));
+  if(quase.length)out.push(['green','Perto do Gabarito!',quase.slice(0,3).map(x=>`<b>${esc(x.l.nome)}</b> só precisa subir ${x.g[0][0]} de ${fP(x.g[0][1])} para acima de ${x.g[0][2]}%`).join('; ')+'.']);
+  // categoria pior
+  const cats=catAgg().filter(c=>c.est>=200).sort((x,y)=>(x.qtd??1)-(y.qtd??1));
+  if(cats.length)out.push(['','Categoria que mais erra',`<b>${esc(cats[0].cat)}</b> tem a menor acuracidade de quantidade (${fP(cats[0].qtd)}), com ${fN(cats[0].dv)} peças divergentes em ${fN(cats[0].lojas)} lojas.`]);
+  if(a.EAP)out.push(['blue','Ainda no prazo',`<b>${fN(a.EAP)}</b> itens com divergência foram enviados nos últimos 4 dias e ainda não têm 3ª contagem na base. Eles ficam fora do realizado até a aprovação ou até vencer o prazo.`]);
+  $('#insights').innerHTML=out.map(([c,t,x])=>`<div class="insight ${c}"><h5>${t}</h5>${x}</div>`).join('');
+}
+
+/* ---------------- detalhe ---------------- */
+let MD={};
+function abrirModal(t,s,kpis,cols,rows,arq){
+  MD={cols,rows,arq:arq||'IR_detalhe'};
+  $('#mdDetN').textContent=fN(rows.length)+(rows.length===1?' item':' itens');
+  $('#mdDetT').textContent=t;$('#mdDetS').textContent=s;
+  $('#mdDetK').innerHTML=kpis.map(([k,v])=>`<div><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`).join('');
+  delete sorts['#mdDetTb'];table('#mdDetTb',cols,rows);
+  $('#mdDet').hidden=false;$('#mdDet').querySelector('.modal-close').focus();
+}
+const xCols=[{k:'dia',t:'Dia',x:r=>fD(r.dia)},{k:'loja',t:'Nº loja'},{k:'lj',t:'Loja',x:r=>lojaNome(r.loja)},{k:'prod',t:'Item'},{k:'desc',t:'Descrição'},{k:'cat',t:'Categoria'},{k:'sub',t:'Subcategoria'},
+  {k:'sf',t:'Status final',x:r=>ST_LBL[r.sf]},{k:'bs',t:'Sistema'},{k:'q',t:'Contado',x:r=>r.div?r.div.tc:r.q},{k:'dv',t:'Divergência (peças)'},{k:'cu',t:'Custo unit. (cadastro)'},{k:'vdv',t:'Divergência a custo (R$)',x:r=>+(r.vdv||0).toFixed(2)},{k:'catS',t:'Categoria S.E.N.N.A.'},{k:'stt',t:'Status do item'},{k:'user',t:'Quem contou',x:r=>r.st==='PENDING'?'':r.user},
+  {k:'g',t:'Gestor',x:r=>r.div?r.div.gestor:''},{k:'ds',t:'Status da divergência',x:r=>r.div?(DIV_LBL[r.div.st]||r.div.st):''},{k:'vinc',t:'Vínculo da divergência'}];
+function exportModal(){
+  const nome=MD.arq.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_]+/g,'_');
+  exportXlsx(nome,xCols,MD.rows);
+}
+function abrirLoja(n){
+  const rs=R.rows.filter(r=>r.loja===n&&r.sf!=='RSD');const a=R.lojas.find(l=>l.num===n);
+  const cols=[{k:'t',t:'Dia',f:r=>fD(r.dia)},{k:'prod',t:'Item'},{k:'desc',t:'Descrição',f:r=>`<span title="${esc(r.desc)}">${esc((r.desc||'').slice(0,70))}</span>`},{k:'cat',t:'Categoria'},
+    {k:'sf',t:'Status final',f:r=>`<span style="color:${ST_COR[r.sf]};font-weight:bold;">${ST_LBL[r.sf]}</span>`},{k:'bs',t:'Sistema',n:1},{k:'q',t:'Contado',n:1,f:r=>r.div?(r.div.tc??'—'):(r.q??'—')},{k:'dv',t:'Div.',n:1},{k:'vdv',t:'Div. a custo',n:1,f:r=>fR(r.vdv)},{k:'user',t:'Quem contou',f:r=>r.st==='PENDING'?'—':esc(r.user)}];
+  abrirModal(lojaNome(n)+' · loja '+n,'Itens não realizados ou com divergência no filtro',[['Realizado',fP(a.real)],['Acur. Qtd',fP(a.qtd)],['Acur. SKU',fP(a.sku)],['Classificação',a.cls]],cols,rs,'IR_loja_'+n+'_'+lojaNome(n)+'_'+fDs(F.ini).replace('/','-')+'_a_'+fDs(F.fim).replace('/','-'));
+}
+function abrirItem(cod){
+  const rs=R.rows.filter(r=>r.prod===cod);const d=rs[0]?.desc||'';
+  const a=agg(rs);
+  const cols=[{k:'loja',t:'Loja',f:r=>r.loja+' · '+esc(lojaNome(r.loja))},{k:'t',t:'Dia',f:r=>fD(r.dia)},{k:'sf',t:'Status final',f:r=>`<span style="color:${ST_COR[r.sf]};font-weight:bold;">${ST_LBL[r.sf]}</span>`},
+    {k:'bs',t:'Sistema',n:1},{k:'q',t:'Contado',n:1,f:r=>r.div?(r.div.tc??'—'):(r.q??'—')},{k:'dv',t:'Div.',n:1},{k:'vdv',t:'Div. a custo',n:1,f:r=>fR(r.vdv)},{k:'user',t:'Quem contou',f:r=>r.st==='PENDING'?'—':esc(r.user)},{k:'g',t:'Gestor',f:r=>r.div?esc(r.div.gestor):''}];
+  abrirModal(cod+' · '+d.slice(0,80),'Contagens do item em cada loja no filtro',[['Lojas',fN(rs.length)],['Com divergência',fN(a.RCD)],['Div. peças',fN(a.dv)],['Div. a custo',fR(a.vdv)],['Acur. Qtd',fP(a.qtd)]],cols,rs,'IR_item_'+cod);
+}
+
+/* ---------------- DIA A DIA ---------------- */
+function diaAgg(){
+  const m=new Map();R.rows.forEach(r=>{if(!m.has(r.dia))m.set(r.dia,[]);m.get(r.dia).push(r);});
+  return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(([d,rs])=>{const a=agg(rs);a.dia=d;a.sem=weeknum(d);a.wd=DIAS[dDate(d).getUTCDay()];a.lojas=new Set(rs.map(r=>r.loja)).size;return a;});
+}
+function heatColor(v,ok,min){if(v==null)return '';if(v>ok/100)return 'background:#16A34A;color:#fff;';if(v<min/100)return 'background:#C00000;color:#fff;';return 'background:#F59E0B;color:#1E293B;';}
+let heatModo='real';
+function renderDiario(){
+  const M=METAS;const D=diaAgg();
+  $('#diaLoja').textContent=F.loja?('Loja '+F.loja+' · '+lojaNome(+F.loja)):(F.dist||'Todas as lojas');
+  const sts=['RSD','RCD','NRO','NRG','EAP'];
+  mkChart('chDia',{type:'bar',data:{labels:D.map(d=>fDs(d.dia)),datasets:[
+    ...sts.map(s=>({label:ST_LBL[s],data:D.map(d=>d[s]),backgroundColor:ST_COR[s],stack:'s',yAxisID:'y',order:2})),
+    {type:'line',label:'Realizado',data:D.map(d=>d.real),borderColor:azul(),backgroundColor:azul(),borderWidth:2.5,yAxisID:'y2',tension:.25,order:1}]},
+    options:{scales:{y:{stacked:true,title:{display:true,text:'itens'}},y2:{position:'right',min:0,max:1,grid:{display:false},ticks:{stepSize:0.1,callback:v=>fP(v,0)}}},
+      plugins:{tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?c.dataset.label+': '+fP(c.raw):c.dataset.label+': '+fN(c.raw)}}}}});
+  const cols=[{k:'dia',t:'Dia',f:r=>fD(r.dia)},{k:'wd',t:'Dia da semana'},{k:'sem',t:'Semana',n:1},{k:'lojas',t:'Lojas',n:1},{k:'tot',t:'Itens enviados',n:1},{k:'realizados',t:'Realizados',n:1},
+    {k:'NRO',t:'Ñ real. oper.',n:1},{k:'NRG',t:'Ñ real. gestão',n:1},{k:'real',t:'Realizado',n:1,f:r=>fP(r.real),cl:r=>tone(r.real,M.rOk,M.rMin),x:r=>r.real},
+    {k:'RCD',t:'Div. SKUs',n:1},{k:'sku',t:'Acur. SKU',n:1,f:r=>fP(r.sku),cl:r=>tone(r.sku,M.sOk,M.sMin),x:r=>r.sku},{k:'dv',t:'Div. Qtd',n:1},{k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin),x:r=>r.qtd}];
+  cols.splice(8,0,{k:'EAP',t:'Em aprovação',n:1});
+  table('#tbDia',cols,D,{sort:{k:'dia',d:1}});
+  $('#expDia').onclick=()=>exportXlsx('IR_dia_a_dia',cols.map(c=>c.k==='dia'?{...c,x:r=>fD(r.dia)}:c),D);
+  // heatmap
+  const dias=D.map(d=>d.dia);const lojas=[...new Set(R.rows.map(r=>r.loja))].sort((a,b)=>a-b);
+  const cell=new Map();R.rows.forEach(r=>{const k=r.loja+'_'+r.dia;if(!cell.has(k))cell.set(k,[]);cell.get(k).push(r);});
+  const [ok,min]=heatModo==='real'?[M.rOk,M.rMin]:heatModo==='sku'?[M.sOk,M.sMin]:[M.qOk,M.qMin];
+  let h='<tr><th class="lj">Loja</th>'+dias.map(d=>`<th>${fDs(d)}<br>${DIAS[dDate(d).getUTCDay()].slice(0,3)}</th>`).join('')+'</tr>';
+  lojas.forEach(n=>{h+=`<tr><th class="lj">${esc(lojaNome(n))}</th>`+dias.map(d=>{const rs=cell.get(n+'_'+d);if(!rs)return '<td style="background:var(--surface-2);"></td>';const a=agg(rs);const v=a[heatModo];return `<td style="${heatColor(v,ok,min)}" title="${esc(lojaNome(n))} · ${fD(d)} · ${fN(a.tot)} itens · realizado ${fP(a.real)} · acur. SKU ${fP(a.sku)} · acur. qtd ${fP(a.qtd)}">${v==null?'—':fP(v,0)}</td>`;}).join('')+'</tr>';});
+  $('#tbHeat').innerHTML=h;
+  // semanas
+  const sm=new Map();R.rows.forEach(r=>{const w=weeknum(r.dia);if(!sm.has(w))sm.set(w,[]);sm.get(w).push(r);});
+  const S=[...sm.entries()].sort((a,b)=>a[0]-b[0]).map(([w,rs])=>{const a=agg(rs);a.sem=w;const ds=rs.map(r=>r.dia);a.ini=Math.min(...ds);a.fim=Math.max(...ds);const ls=new Map();rs.forEach(r=>{if(!ls.has(r.loja))ls.set(r.loja,[]);ls.get(r.loja).push(r);});a.gab=[...ls.values()].filter(x=>score(agg(x))===100).length;a.nl=ls.size;return a;});
+  table('#tbSemana',[{k:'sem',t:'Semana',n:1},{k:'ini',t:'Período',f:r=>fD(r.ini)+' a '+fD(r.fim)},{k:'tot',t:'Itens enviados',n:1},{k:'real',t:'Realizado',n:1,f:r=>fP(r.real),cl:r=>tone(r.real,M.rOk,M.rMin)},{k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin)},{k:'sku',t:'Acur. SKU',n:1,f:r=>fP(r.sku),cl:r=>tone(r.sku,M.sOk,M.sMin)},{k:'gab',t:'Lojas Gabarito!',n:1,f:r=>r.gab+' de '+r.nl}],S,{sort:{k:'sem',d:1}});
+}
+
+/* ---------------- ITENS ---------------- */
+function catAgg(){
+  const m=new Map();R.rows.forEach(r=>{const c=r.cat||'Sem categoria';if(!m.has(c))m.set(c,[]);m.get(c).push(r);});
+  return [...m.entries()].map(([c,rs])=>{const a=agg(rs);a.cat=c;a.lojas=new Set(rs.filter(r=>r.dv>0).map(r=>r.loja)).size;a.itens=new Set(rs.map(r=>r.prod)).size;return a;});
+}
+function renderItens(){
+  const M=METAS;const C=catAgg();
+  const Cs=C.filter(c=>c.est>0).sort((x,y)=>(x.qtd??1)-(y.qtd??1)).slice(0,15);
+  mkChart('chCat',{type:'bar',data:{labels:Cs.map(c=>c.cat.length>28?c.cat.slice(0,27)+'…':c.cat),datasets:[{label:'Acur. Qtd',data:Cs.map(c=>c.qtd),backgroundColor:Cs.map(c=>(c.qtd??1)<M.qMin/100?'#C00000':(c.qtd??1)<=M.qOk/100?'#F59E0B':azul())}]},
+    options:{indexAxis:'y',scales:{x:{min:Math.max(0,Math.min(...Cs.map(c=>c.qtd??1))-0.02),max:1,ticks:{callback:v=>fP(v,0)}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fP(c.raw,2)}}}}});
+  const cc=[{k:'cat',t:'Categoria'},{k:'itens',t:'SKUs',n:1},{k:'tot',t:'Contagens',n:1},{k:'RCD',t:'Com div.',n:1},{k:'sku',t:'Acur. SKU',n:1,f:r=>fP(r.sku),cl:r=>tone(r.sku,M.sOk,M.sMin),x:r=>r.sku},{k:'est',t:'Peças sistema',n:1},{k:'dv',t:'Div. peças',n:1},{k:'vdv',t:'Div. a custo',n:1,f:r=>fR(r.vdv),x:r=>+r.vdv.toFixed(2)},{k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin),x:r=>r.qtd},{k:'real',t:'Realizado',n:1,f:r=>fP(r.real),x:r=>r.real}];
+  table('#tbCat',cc,C,{sort:{k:'qtd',d:1}});
+  $('#expCat').onclick=()=>exportXlsx('IR_categorias',cc,C);
+  renderItensTb();
+}
+function renderItensTb(){
+  const M=METAS;const q=norm($('#itBusca').value);
+  const m=new Map();R.rows.forEach(r=>{if(!m.has(r.prod))m.set(r.prod,[]);m.get(r.prod).push(r);});
+  let I=[...m.entries()].map(([p,rs])=>{const a=agg(rs);a.prod=p;a.desc=rs[0].desc;a.cat=rs[0].cat;a.catS=rs[0].catS;a.stt=rs[0].stt;a.cu=rs[0].cu;a.lojas=rs.length;a.lojasDiv=rs.filter(r=>r.sf==='RCD').length;a.nr=a.NRO+a.NRG;return a;});
+  I=I.filter(i=>i.dv>0||i.RCD>0||i.nr>0);
+  if(q)I=I.filter(i=>norm(i.prod+' '+i.desc).includes(q));
+  const cols=[{k:'prod',t:'Item'},{k:'desc',t:'Descrição',f:r=>`<span title="${esc(r.desc)}">${esc((r.desc||'').slice(0,72))}</span>`},{k:'cat',t:'Categoria'},{k:'catS',t:'Categoria S.E.N.N.A.',tip:'Categoria do cadastro de produtos (Código BSeller)'},{k:'stt',t:'Status'},{k:'cu',t:'Custo unit.',n:1,f:r=>r.cu>0?fR(r.cu):'—',x:r=>r.cu},{k:'lojas',t:'Lojas contadas',n:1},{k:'lojasDiv',t:'Lojas c/ div.',n:1,cl:r=>r.lojasDiv>=3?'bad':''},
+    {k:'est',t:'Peças sistema',n:1},{k:'dv',t:'Div. peças',n:1},{k:'vdv',t:'Div. a custo',n:1,f:r=>fR(r.vdv),x:r=>+r.vdv.toFixed(2)},{k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin),x:r=>r.qtd},{k:'nr',t:'Não realizado',n:1}];
+  table('#tbItens',cols,I,{sort:{k:'dv',d:-1},limit:300,click:i=>abrirItem(i.prod)});
+  $('#expItens').onclick=()=>exportXlsx('IR_itens',cols,I);
+}
+
+/* ---------------- PESSOAS ---------------- */
+function renderPessoas(){
+  const M=METAS;
+  const m=new Map();R.rows.filter(r=>r.sf==='RSD'||r.sf==='RCD').forEach(r=>{const u=r.user||'Sem usuário na base';if(!m.has(u))m.set(u,[]);m.get(u).push(r);});
+  const P=[...m.entries()].map(([u,rs])=>{const a=agg(rs);a.user=u;const ls=[...new Set(rs.map(r=>r.loja))];a.lojasTxt=ls.length>3?ls.slice(0,3).map(lojaNome).join(', ')+' e mais '+(ls.length-3):ls.map(lojaNome).join(', ');a.dias=new Set(rs.map(r=>r.dia)).size;a.porDia=a.tot/a.dias;a.pctDiv=a.RCD/a.tot;return a;});
+  const cols=[{k:'user',t:'Pessoa'},{k:'lojasTxt',t:'Loja'},{k:'tot',t:'Itens contados',n:1},{k:'dias',t:'Dias',n:1},{k:'porDia',t:'Itens/dia',n:1,f:r=>r.porDia.toFixed(1).replace('.',','),x:r=>r.porDia},{k:'RCD',t:'Com divergência',n:1},{k:'pctDiv',t:'% com div.',n:1,f:r=>fP(r.pctDiv),cl:r=>r.tot>=50&&r.pctDiv>(1-M.sMin/100)?'bad':'',x:r=>r.pctDiv},{k:'dv',t:'Div. peças',n:1},{k:'qtd',t:'Acur. Qtd',n:1,f:r=>fP(r.qtd),cl:r=>tone(r.qtd,M.qOk,M.qMin),x:r=>r.qtd}];
+  table('#tbCont',cols,P,{sort:{k:'tot',d:-1}});
+  $('#expCont').onclick=()=>exportXlsx('IR_contadores',cols,P);
+  const dv=divsNoFiltro();
+  const g=new Map();dv.forEach(d=>{const u=d.gestor||'—';if(!g.has(u))g.set(u,[]);g.get(u).push(d);});
+  const G=[...g.entries()].map(([u,ds])=>{const x={gestor:u,n:ds.length};x.lojasTxt=[...new Set(ds.map(d=>d.loja))].map(lojaNome).join(', ');x.apr=ds.filter(d=>d.st==='APPROVED_WITH_DIVERGENCE').length;x.enc=ds.filter(d=>d.st==='SHUT_DOWN').length;x.enc0=ds.filter(d=>d.st==='SHUT_DOWN'&&d.tc==null).length;x.zer=ds.filter(d=>d.tc!=null&&d.tbs===d.tc).length;
+    const hs=ds.filter(d=>d.tdt!=null&&d.cdt!=null).map(d=>(d.tdt-d.cdt)/3600000);x.h=hs.length?hs.reduce((s,v)=>s+v,0)/hs.length:null;x.pEnc0=x.enc0/x.n;return x;});
+  const gc=[{k:'gestor',t:'Gestor (3ª contagem)'},{k:'lojasTxt',t:'Loja'},{k:'n',t:'Divergências',n:1},{k:'apr',t:'Aprovadas c/ div.',n:1},{k:'zer',t:'Zeradas na 3ª',n:1},{k:'enc',t:'Encerradas',n:1},{k:'enc0',t:'Encerradas sem 3ª',n:1,cl:r=>r.enc0?'bad':''},{k:'pEnc0',t:'% sem 3ª',n:1,f:r=>fP(r.pEnc0),x:r=>r.pEnc0},{k:'h',t:'Horas até a 3ª',n:1,f:r=>r.h==null?'—':r.h.toFixed(1).replace('.',','),x:r=>r.h}];
+  table('#tbGest',gc,G,{sort:{k:'n',d:-1}});
+  $('#expGest').onclick=()=>exportXlsx('IR_gestores',gc,G);
+}
+
+/* ---------------- DIVERGÊNCIAS ---------------- */
+function divsNoFiltro(){
+  return DIVS.filter(d=>{if(d.ref==null)return false;const k=dkey(d.ref);if(k<F.ini||k>F.fim)return false;if(F.dist&&lojaDist(d.loja)!==F.dist)return false;if(F.loja&&d.loja!==+F.loja)return false;return true;});
+}
+let dvPag=0;
+function renderDivergencias(){
+  const all=divsNoFiltro();
+  const vincMap=new Map();R.rows.forEach(r=>{if(r.div)vincMap.set(r.div.id,r.vinc);});
+  all.forEach(d=>{d.vinc=vincMap.get(d.id)||'sem lista na base';d.dif=(d.tc!=null&&d.tbs!=null)?d.tc-d.tbs:null;d.stl=DIV_LBL[d.st]||d.st;d.lj=lojaNome(d.loja);});
+  const im=(t,v)=>`<div><span class="k">${t}</span><span class="v">${v}</span></div>`;
+  $('#divKpis').innerHTML=im('Divergências no período',fN(all.length))+im('Aprovadas com divergência',fN(all.filter(d=>d.st==='APPROVED_WITH_DIVERGENCE').length))+im('Encerradas sem 3ª contagem',fN(all.filter(d=>d.st==='SHUT_DOWN'&&d.tc==null).length))+im('Sem lista vinculada',fN(all.filter(d=>d.vinc==='sem lista na base').length));
+  const sts=[...new Set(DIVS.map(d=>d.st))];const sel=$('#dvStatus');const cur=sel.value;
+  sel.innerHTML='<option value="">Todos os status</option>'+sts.map(s=>`<option value="${s}">${esc(DIV_LBL[s]||s)}</option>`).join('');sel.value=cur;
+  const q=norm($('#dvBusca').value);
+  let rows=all.filter(d=>(!sel.value||d.st===sel.value)&&(!q||norm(d.prod+' '+d.desc+' '+d.gestor+' '+d.lider).includes(q)));
+  const cols=[{k:'ref',t:'Data',f:d=>fDH(d.ref),x:d=>fDH(d.ref)},{k:'lj',t:'Loja'},{k:'prod',t:'Item'},{k:'desc',t:'Descrição',f:d=>`<span title="${esc(d.desc)}">${esc((d.desc||'').slice(0,60))}</span>`},
+    {k:'f1',t:'1ª',n:1},{k:'f2',t:'2ª',n:1},{k:'tc',t:'3ª',n:1},{k:'tbs',t:'Sistema',n:1},{k:'dif',t:'Diferença',n:1,cl:d=>d.dif<0?'neg':d.dif>0?'pos':''},
+    {k:'stl',t:'Status'},{k:'lider',t:'2ª contagem por'},{k:'gestor',t:'Gestor'},{k:'vinc',t:'Vínculo',cl:d=>d.vinc==='sem lista na base'?'mid':''}];
+  sorts['#tbDiv']=sorts['#tbDiv']||{k:'ref',d:-1};
+  const s=sorts['#tbDiv'];const c=cols.find(c=>c.k===s.k);rows.sort((a,b)=>{let x=a[c.k],y=b[c.k];if(x==null)x=-Infinity;if(y==null)y=-Infinity;return (x>y?1:x<y?-1:0)*s.d;});
+  const PG=100,np=Math.max(1,Math.ceil(rows.length/PG));if(dvPag>=np)dvPag=np-1;
+  table('#tbDiv',cols,rows.slice(dvPag*PG,dvPag*PG+PG));
+  $('#tbDiv').querySelectorAll('th.sort').forEach(th=>th.onclick=()=>{const k=th.dataset.k;const cur=sorts['#tbDiv'];sorts['#tbDiv']={k,d:cur.k===k?-cur.d:-1};renderDivergencias();});
+  $('#dvPager').innerHTML=`<button class="btn ghost small" id="dvPrev" ${dvPag?'':'disabled'}>Anterior</button><span>Página ${dvPag+1} de ${np} · ${fN(rows.length)} divergências</span><button class="btn ghost small" id="dvNext" ${dvPag<np-1?'':'disabled'}>Próxima</button>`;
+  $('#dvPrev').onclick=()=>{dvPag--;renderDivergencias();};$('#dvNext').onclick=()=>{dvPag++;renderDivergencias();};
+  $('#expDiv').onclick=()=>exportXlsx('IR_divergencias',cols,rows);
+}
+
+/* ---------------- DADOS ---------------- */
+function renderDados(){
+  const Ls=LISTAS,Ds=DIVS;
+  const rng=(arr)=>{const v=arr.filter(x=>x!=null);if(!v.length)return '—';return fD(dkey(Math.min(...v)))+' a '+fD(dkey(Math.max(...v)));};
+  const ultIds=new Set();{const mx=new Map();Ls.forEach(r=>{const k=r.loja+'_'+r.prod+'_'+mkOf(dkey(r.t));if(!mx.has(k)||r.id>mx.get(k))mx.set(k,r.id);});mx.forEach(v=>ultIds.add(v));}
+  const rcdSemDiv=R.rows.filter(r=>r.si==='RCD'&&!r.div).length;
+  const divSemLista=DIVS.filter(d=>!R.usadas.has(d.id)&&d.ref!=null&&dkey(d.ref)>=F.ini&&dkey(d.ref)<=F.fim).length;
+  const foraCad=new Set(),custo0=new Set();R.rows.forEach(r=>{if(!r.cad)foraCad.add(r.prod);else if(!(r.cu>0))custo0.add(r.prod);});
+  const Q=[
+    ['Cadastro de produtos em uso',CAD?fN(CAD.cod.length)+' códigos':'indisponível','—',CAD?esc(CAD.arquivo)+' · gerado em '+esc(CAD.geradoEm)+'. Toda carga nova passa por este cadastro: custo, Categoria S.E.N.N.A. e status entram pelo Código BSeller':'O cadastro não abriu neste navegador; os valores a custo ficam zerados'],
+    ['Itens do filtro fora do cadastro',fN(foraCad.size),fD(F.ini)+' a '+fD(F.fim),'Ficam sem valor a custo. Conferir o código no BSeller'],
+    ['Itens do filtro com custo zero no cadastro',fN(custo0.size),fD(F.ini)+' a '+fD(F.fim),'Ficam sem valor a custo até o custo ser preenchido'],
+    ['Listas de contagem',fN(Ls.length)+' linhas',rng(Ls.map(r=>r.t)),'Base: '+(BASE_ATIVA.listas==='embutida'?'embutida':'substituída por '+BASE_ATIVA.listas)+' · itens únicos por loja e mês: '+fN(ultIds.size)],
+    ['Divergências',fN(Ds.length)+' linhas',rng(Ds.map(d=>d.ref)),'Base: '+(BASE_ATIVA.divs==='embutida'?'embutida':'substituída por '+BASE_ATIVA.divs)+' · '+fN(Ds.filter(d=>d.tdt==null).length)+' sem data de 3ª contagem'],
+    ['Itens com divergência sem 3ª contagem vinculada (filtro)',fN(rcdSemDiv),fD(F.ini)+' a '+fD(F.fim),'Dentro de 4 dias: em aprovação; depois: não realizado · gestão'],
+    ['Divergências do período sem item de lista vinculado',fN(divSemLista),fD(F.ini)+' a '+fD(F.fim),'Lista do dia ainda não carregada ou contagem em outro dia'],
+    ['Divergências repetidas na planilha original',fN(BASE.qual.divDuplicadas),'—','Removidas: cada ID conta uma vez'],
+    ['Itens da extração de 30/10 que faltavam na planilha',fN(BASE.qual.listasNovasFato),'30/10/2026','Incluídos na base embutida'],
+    ['Itens realizados sem usuário (UPDATED_USER vazio)',fN(LISTAS.filter(r=>r.st!=='PENDING'&&!r.user).length),rng(LISTAS.filter(r=>r.st!=='PENDING'&&!r.user).map(r=>r.t)),'Vieram vazios na colagem da planilha; reenvie a extração crua desses dias para recuperar']];
+  table('#tbQual',[{k:0,t:'Verificação'},{k:1,t:'Quantidade',n:1},{k:2,t:'Período'},{k:3,t:'Observação',cl:()=>'wrap'}],Q);
+  // metas
+  const ms=[['rOk','Realizado · meta'],['rMin','Realizado · mínimo'],['qOk','Acur. Qtd · meta'],['qMin','Acur. Qtd · mínimo'],['sOk','Acur. SKU · meta'],['sMin','Acur. SKU · mínimo']];
+  $('#metasForm').innerHTML=ms.map(([k,t])=>`<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:bold;color:var(--title);">${t}<span style="display:flex;align-items:center;gap:6px;"><input type="number" step="0.5" min="0" max="100" data-m="${k}" value="${METAS[k]}" style="width:90px;"> %</span></label>`).join('');
+  // cargas
+  table('#tbCargas',[{k:'quando',t:'Quando',f:c=>fDH(c.quando)},{k:'por',t:'Por',f:c=>esc(NOMES_U.get(c.por)||(c.por?'—':'este navegador'))},{k:'modo',t:'Tipo de carga',f:c=>c.modo==='substituir'?'<span class="tag warn">Substituiu a base</span>':'<span class="tag ok">Adicionou</span>'},{k:'nome',t:'Arquivo',cl:()=>'wrap'},{k:'tipo',t:'Conteúdo'},{k:'nl',t:'Linhas de lista',n:1,f:c=>fN((c.listas||[]).length)},{k:'nd',t:'Divergências',n:1,f:c=>fN((c.divs||[]).length)},{k:'x',t:'',f:c=>`<button class="btn ghost small" data-del="${c.key}">Excluir</button>`}],CARGAS);
+  $('#tbCargas').querySelectorAll('[data-del]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const k=SDB?b.dataset.del:+b.dataset.del;if(SDB&&!await pergunta('Excluir esta carga para todos que usam o painel?'))return;await idbDel(k);CARGAS=CARGAS.filter(c=>c.key!==k);afterData('Carga excluída.');});
+}
+function bindDados(){
+  setupParcial();setupGerador();
+  $('#btnUp').onclick=()=>$('#fileUp').click();
+  $('#fileUp').onchange=e=>{handleFiles([...e.target.files]);e.target.value='';};
+  const dz=$('#dropUp');
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
+  dz.addEventListener('drop',e=>handleFiles([...e.dataTransfer.files]));
+  $('#btnBase').onclick=()=>$('#fileBase').click();
+  $('#fileBase').onchange=e=>{handleBase([...e.target.files]);e.target.value='';};
+  const db=$('#dropBase');
+  ['dragenter','dragover'].forEach(ev=>db.addEventListener(ev,e=>{e.preventDefault();db.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>db.addEventListener(ev,e=>{e.preventDefault();db.classList.remove('over');}));
+  db.addEventListener('drop',e=>handleBase([...e.dataTransfer.files]));
+  $('#metaSalvar').onclick=()=>{document.querySelectorAll('#metasForm input').forEach(i=>{const v=parseFloat(i.value);if(isFinite(v))METAS[i.dataset.m]=v;});
+    if(METAS.rMin>METAS.rOk||METAS.qMin>METAS.qOk||METAS.sMin>METAS.sOk){toast('O mínimo não pode ser maior que a meta. Ajuste os valores.');return;}
+    salvarMetas();refresh();toast(SDB?'Metas salvas para todos. A classificação foi refeita.':'Metas salvas. A classificação foi refeita.');};
+  $('#metaPadrao').onclick=()=>{METAS={...METAS_PADRAO};salvarMetas();refresh();toast('Metas voltaram ao padrão (95%, 92% e 88%).');};
+  $('#btnReset').onclick=async()=>{if(!CARGAS.length){toast('Não há cargas para remover.');return;}if(SDB&&!await pergunta('Remover todas as cargas para todos que usam o painel?'))return;await idbClear();CARGAS=[];afterData('Cargas removidas. Valendo só a base embutida.');$('#resUp').innerHTML='';$('#resBase').innerHTML='';};
+}
+
+/* ---- leitura de arquivos ---- */
+function xlDate(v){
+  if(v==null||v==='')return null;
+  if(typeof v==='number')return Math.round((v-25569)*DAY);
+  if(v instanceof Date)return Date.UTC(v.getFullYear(),v.getMonth(),v.getDate(),v.getHours(),v.getMinutes(),v.getSeconds());
+  const s=String(v).trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T]?(\d{2})?:?(\d{2})?:?(\d{2})?/);
+  if(m)return Date.UTC(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?/);
+  if(m)return Date.UTC(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  return null;
+}
+const numv=v=>{if(v==null||v==='')return null;const n=typeof v==='number'?v:parseFloat(String(v).replace(',','.'));return isFinite(n)?n:null;};
+function sheetRows(ws){
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null,blankrows:false});
+  for(let i=0;i<Math.min(6,aoa.length);i++){
+    const h=aoa[i].map(norm);
+    const known=['branchid','productid','status','loja','bseller','thirdcount','id','updateddate'];
+    if(h.filter(x=>known.includes(x)).length>=3){
+      return {h,body:aoa.slice(i+1)};
+    }
+  }
+  return null;
+}
+function parseSheet(name,ws){
+  const s=sheetRows(ws);if(!s)return null;const h=s.h;const ix=k=>h.indexOf(k);const g=(r,k)=>{const i=ix(k);return i<0?null:r[i];};
+  const has=(...ks)=>ks.every(k=>ix(k)>=0);
+  // fato produtos das listas (cru)
+  if(has('branchid','productid','status','bsellerstock','id')&&!has('thirdcount')){
+    return {tipo:'Listas (extração crua)',listas:s.body.filter(r=>numv(g(r,'id'))!=null).map(r=>({id:numv(g(r,'id')),loja:numv(g(r,'branchid')),t:xlDate(g(r,'updateddate')),user:g(r,'updateduser')||'',cat:g(r,'category')||'Sem categoria',sub:g(r,'subcategory')||'',prod:numv(g(r,'productid')),desc:g(r,'productdescription')||'',st:String(g(r,'status')||''),q:numv(g(r,'quantity')),bs:numv(g(r,'bsellerstock'))})).filter(r=>r.t!=null&&r.loja!=null)};
+  }
+  // aba Listas_Contagem da planilha
+  if(has('loja','bseller','status','bsellerstock','id')){
+    return {tipo:'Listas (planilha LDM Rotativo)',listas:s.body.filter(r=>numv(g(r,'id'))!=null).map(r=>({id:numv(g(r,'id')),loja:numv(g(r,'loja')),t:xlDate(g(r,'updateddate')),user:g(r,'coluna1')||'',cat:g(r,'category')||'Sem categoria',sub:g(r,'coluna6')||'',prod:numv(g(r,'bseller')),desc:g(r,'productdescription')||'',st:String(g(r,'status')||''),q:numv(g(r,'quantity')),bs:numv(g(r,'bsellerstock'))})).filter(r=>r.t!=null&&r.loja!=null)};
+  }
+  // fato divergências (cru)
+  if(has('thirdcount','branchid','productid','id','status')&&ix('createddate')>=0){
+    return {tipo:'Divergências (extração crua)',divs:s.body.filter(r=>numv(g(r,'id'))!=null).map(r=>({id:numv(g(r,'id')),loja:numv(g(r,'branchid')),prod:numv(g(r,'productid')),desc:g(r,'productdescription')||'',st:String(g(r,'status')||''),tbs:numv(g(r,'thirdcountbsellerstock')),tc:numv(g(r,'thirdcount')),tdt:xlDate(g(r,'thirdcountdate')),cdt:xlDate(g(r,'createddate')),gestor:g(r,'thirdownername')||'',lider:g(r,'secondownername')||'',cont1:g(r,'firstownername')||'',f1:numv(g(r,'firstcount')),f2:numv(g(r,'secondcount')),obs:String(g(r,'observation')??'').trim()}))};
+  }
+  // aba Dados_Divergencias da planilha
+  if(has('thirdcount','branchid','productid','countdate')&&ix('10')>=0){
+    return {tipo:'Divergências (planilha LDM Rotativo)',divs:s.body.filter(r=>numv(g(r,'10'))!=null).map(r=>({id:numv(g(r,'10')),loja:numv(g(r,'branchid')),prod:numv(g(r,'productid')),desc:g(r,'productdescription')||'',st:String(g(r,'status')||''),tbs:numv(g(r,'thirdcountbsellerstock')),tc:numv(g(r,'thirdcount')),tdt:xlDate(g(r,'countdate')),cdt:xlDate(g(r,'4')),gestor:g(r,'thirdownername')||'',lider:g(r,'2')||'',cont1:g(r,'firstownername')||'',f1:numv(g(r,'firstcount')),f2:numv(g(r,'secondcount')),obs:String(g(r,'observation')??'').trim()}))};
+  }
+  return null;
+}
+async function lerArquivo(f){
+  const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:false,dense:true});
+  const out={listas:[],divs:[],tipos:[]};const seen=new Set();
+  for(const n of wb.SheetNames){const p=parseSheet(n,wb.Sheets[n]);if(p){out.tipos.push(p.tipo);if(p.listas)out.listas.push(...p.listas);if(p.divs)p.divs.forEach(d=>{if(!seen.has(d.id)){seen.add(d.id);out.divs.push(d);}});}}
+  return out;
+}
+const SEM_COLUNAS='não encontrei as colunas de listas (BRANCH_ID, PRODUCT_ID, STATUS, BSELLER_STOCK) nem de divergências (Third Count, Branch ID, Product ID). Confira se é a extração certa.';
+const agora=()=>Date.now()-new Date().getTimezoneOffset()*60000;
+async function handleFiles(files){
+  if(!files.length)return;
+  const res=$('#resUp');res.innerHTML='<p class="note">Lendo '+files.length+' arquivo(s)…</p>';
+  const msgs=[];
+  for(const f of files){
+    try{
+      const p=await lerArquivo(f);
+      if(!p.listas.length&&!p.divs.length){msgs.push(`<p class="res-err">${esc(f.name)}: ${SEM_COLUNAS}</p>`);continue;}
+      const idsL=new Set(LISTAS.map(r=>r.id)),idsD=new Set(DIVS.map(d=>d.id));
+      const novL=p.listas.filter(r=>!idsL.has(r.id)).length,novD=p.divs.filter(d=>!idsD.has(d.id)).length;
+      const c={nome:f.name,quando:agora(),modo:'adicionar',tipo:p.tipos.join(' + '),listas:p.listas,divs:p.divs};
+      try{c.key=await idbAdd(c);}catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: lido, mas não gravado na base compartilhada.</p>`);continue;}if(!CARGAS.some(x=>x.key===c.key))CARGAS.push(c);
+      msgs.push(`<p class="res-ok">${esc(f.name)} · ${esc(c.tipo)}: ${fN(c.listas.length)} linhas de lista (${fN(novL)} novas) e ${fN(c.divs.length)} divergências (${fN(novD)} novas).</p>`);
+    }catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: não foi possível ler o arquivo (${esc(e.message)}).</p>`);}
+  }
+  res.innerHTML=msgs.join('');
+  afterData('Base atualizada.');
+}
+async function handleBase(files){
+  if(!files.length)return;
+  const res=$('#resBase');res.innerHTML='<p class="note">Lendo '+files.length+' arquivo(s)…</p>';
+  const c={nome:files.map(f=>f.name).join(' + '),quando:agora(),modo:'substituir',listas:[],divs:[],tipos:[]};const msgs=[];
+  for(const f of files){
+    try{const p=await lerArquivo(f);
+      if(!p.listas.length&&!p.divs.length){msgs.push(`<p class="res-err">${esc(f.name)}: ${SEM_COLUNAS}</p>`);continue;}
+      c.tipos.push(...p.tipos);c.listas.push(...p.listas);const ids=new Set(c.divs.map(d=>d.id));p.divs.forEach(d=>{if(!ids.has(d.id)){ids.add(d.id);c.divs.push(d);}});
+    }catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: não foi possível ler o arquivo (${esc(e.message)}).</p>`);}
+  }
+  if(!c.listas.length&&!c.divs.length){res.innerHTML=msgs.join('')||'<p class="res-err">Nenhum dado reconhecido. A base atual foi mantida.</p>';return;}
+  const partes=[c.listas.length?fN(c.listas.length)+' linhas de lista (hoje: '+fN(LISTAS.length)+')':'',c.divs.length?fN(c.divs.length)+' divergências (hoje: '+fN(DIVS.length)+')':''].filter(Boolean).join(' e ');
+  if(!await pergunta('Substituir a base por '+partes+'?\n\nO que existe hoje '+(c.listas.length&&c.divs.length?'':'nesse tipo ')+'deixa de valer. Dá para desfazer excluindo a carga no histórico.')){res.innerHTML='<p class="res-warn">Substituição cancelada. A base atual foi mantida.</p>';return;}
+  c.tipo=[...new Set(c.tipos)].join(' + ');delete c.tipos;
+  try{c.key=await idbAdd(c);}catch(e){res.innerHTML='<p class="res-err">Arquivos lidos, mas a substituição não foi gravada na base compartilhada. A base atual foi mantida.</p>';return;}if(!CARGAS.some(x=>x.key===c.key))CARGAS.push(c);
+  msgs.push(`<p class="res-ok">Base substituída: ${partes.replace(/ \(hoje: [^)]*\)/g,'')}.${c.listas.length?'':' As listas atuais foram mantidas.'}${c.divs.length?'':' As divergências atuais foram mantidas.'}</p>`);
+  res.innerHTML=msgs.join('');
+  afterData('Base substituída.');
+}
+function afterData(msg){
+  rebuild();const m=[...new Set(DIAS_DISP.map(mkOf))];
+  setupFilters();refresh();pitstopAgendar();if(msg)toast(msg);
+}
+
+/* ---------------- resumo para o S.E.N.N.A. - Pit Stop ----------------
+   Uma célula por loja e período (cada mês e o ano inteiro), calculada pelo mesmo compute() + agg() do painel,
+   como o resumo mensal: o ano inteiro é calculado à parte porque a regra "Última" muda quando o período cresce.
+   Acuracidade Qtd = 1 − peças divergentes ÷ peças no sistema.
+   Fica em pitstop/resumo; o Pit Stop mostra uma cópia deste documento e não refaz a conta. */
+function pitstopResumo(){
+  if(!LISTAS.length||!CORTE)return null;
+  const anoMax=new Date(CORTE).getUTCFullYear(),mkMin=(anoMax-1)*12,meses=new Set();
+  LISTAS.forEach(r=>{const k=mkOf(dkey(r.t));if(k>=mkMin)meses.add(k);});
+  const g={ini:F.ini,fim:F.fim,dist:F.dist,loja:F.loja},L={},P=[],r6=x=>x==null?null:Math.round(x*1e6)/1e6;
+  const roda=(pk,ini,fim)=>{F.ini=ini;F.fim=fim;const por=new Map();
+    compute().rows.forEach(r=>{if(!por.has(r.loja))por.set(r.loja,[]);por.get(r.loja).push(r);});
+    if(!por.size)return;P.push(pk);
+    por.forEach((rs,l)=>{const a=agg(rs);(L[l]||(L[l]={}))[pk]={tot:a.tot,rea:a.RSD+a.RCD,rcd:a.RCD,nr:a.NRO+a.NRG,eap:a.EAP,est:a.est,dv:a.dv,qtd:r6(a.qtd),sku:r6(a.sku),real:r6(a.real)};});};
+  try{F.dist='';F.loja='';
+    [...meses].sort((a,b)=>a-b).forEach(k=>{const y=Math.floor(k/12),m=k%12;roda(y+'-'+String(m+1).padStart(2,'0'),dkey(Date.UTC(y,m,1)),dkey(Date.UTC(y,m+1,0)));});
+    [...new Set([...meses].map(k=>Math.floor(k/12)))].sort().forEach(y=>roda(String(y),dkey(Date.UTC(y,0,1)),dkey(Date.UTC(y,11,31))));
+  }finally{F.ini=g.ini;F.fim=g.fim;F.dist=g.dist;F.loja=g.loja;}
+  return {dadosAte:new Date(CORTE).toISOString().slice(0,10),metas:{qOk:METAS.qOk,qMin:METAS.qMin,rOk:METAS.rOk,rMin:METAS.rMin,sOk:METAS.sOk,sMin:METAS.sMin},periodos:P.sort(),lojas:L};
+}
+let PS_T=null,PS_ULT=null;
+function pitstopAgendar(){clearTimeout(PS_T);PS_T=setTimeout(pitstopGravar,3000);}
+async function pitstopGravar(){
+  try{
+    if(!SDB||!UCAP)return;                       /* sem base compartilhada não há o que gravar */
+    if(!(await UCAP.canEdit()))return;              /* só quem edita o módulo gera o resumo */
+    const r=pitstopResumo();if(!r)return;
+    const corpo=JSON.stringify(r);if(corpo===PS_ULT)return;
+    const ref=SDB.doc('pitstop/resumo');
+    if(PS_ULT===null){const s=await ref.get();if(s.exists&&s.data().corpo===corpo){PS_ULT=corpo;return;}}
+    await ref.set({v:1,modulo:'rotativo',geradoEm:new Date().toISOString(),corpo});PS_ULT=corpo;
+  }catch(e){console.warn('Resumo para o Pit Stop não gravado:',(e&&e.code)||e);}
+}
+
+/* ---- IndexedDB ---- */
+let _db=null;
+function idbL(){return new Promise((ok,err)=>{if(_db)return ok(_db);try{const r=indexedDB.open('ldm_ir_diario',1);r.onupgradeneeded=()=>r.result.createObjectStore('cargas',{keyPath:'key',autoIncrement:true});r.onsuccess=()=>{_db=r.result;ok(_db);};r.onerror=()=>err(r.error);}catch(e){err(e);}});}
+async function locAll(){try{const db=await idbL();return await new Promise((ok,err)=>{const q=db.transaction('cargas').objectStore('cargas').getAll();q.onsuccess=()=>ok(q.result||[]);q.onerror=()=>err(q.error);});}catch(e){return [];}}
+async function locAdd(c){try{const db=await idbL();return await new Promise((ok,err)=>{const o={...c};delete o.key;const q=db.transaction('cargas','readwrite').objectStore('cargas').add(o);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});}catch(e){return Date.now();}}
+async function locDel(k){try{const db=await idbL();await new Promise(ok=>{const q=db.transaction('cargas','readwrite').objectStore('cargas').delete(k);q.onsuccess=ok;q.onerror=ok;});}catch(e){}}
+async function locClear(){try{const db=await idbL();await new Promise(ok=>{const q=db.transaction('cargas','readwrite').objectStore('cargas').clear();q.onsuccess=ok;q.onerror=ok;});}catch(e){}}
+
+/* ---- Base compartilhada (todos veem as mesmas cargas); reserva: IndexedDB deste navegador ---- */
+let SDB=null,ME=null,UCAP=null;const NOMES_U=new Map();const SCACHE=new Map();let primeiro=null;
+async function gzipB64(obj){const st=new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'));const buf=new Uint8Array(await new Response(st).arrayBuffer());let s='';for(let i=0;i<buf.length;i+=0x8000)s+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000));return btoa(s);}
+function statusDb(cls,txt){$('#hdDb').className='pill '+cls;$('#hdDbTxt').textContent=txt;}
+async function conectarCompartilhada(){
+  try{SDB=window.claude?await window.claude.use('db'):null;}catch(e){SDB=null;}
+  try{UCAP=window.claude?await window.claude.use('user'):null;if(UCAP){const me=await UCAP.me();ME=me&&me.id||null;}}catch(e){UCAP=null;}
+  if(!SDB)return;
+  SDB.doc('config/metas').onSnapshot(s=>{const d=s.exists?s.data():null;if(d&&typeof d.rOk==='number'){METAS={...METAS_PADRAO,...d};if(R)refresh();}},()=>{});
+  primeiro=new Promise(res=>{let feito=false;const t=setTimeout(()=>{if(!feito){feito=true;res([]);statusDb('warn','Base compartilhada sem resposta');}},10000);
+    SDB.collection('cargas').onSnapshot(async snap=>{
+      const metas=snap.docs.filter(d=>d.exists).map(d=>Object.assign({key:d.id},d.data()));
+      for(const m of metas){if(SCACHE.has(m.key))continue;try{let z='';for(let p=0;p<(m.partes||0);p++){const d=await SDB.doc(`cargas/${m.key}/partes/p${p}`).get();z+=d.exists?d.data().z:'';}SCACHE.set(m.key,await gunzipB64(z));}catch(e){console.warn('carga ilegível',m.key,e);}}
+      const lista=metas.filter(m=>SCACHE.has(m.key)).sort((a,b)=>a.quando-b.quando).map(m=>Object.assign({},m,SCACHE.get(m.key)));
+      const ids=[...new Set(lista.map(c=>c.por).filter(Boolean))].filter(id=>!NOMES_U.has(id));
+      if(UCAP&&ids.length){try{const ps=await UCAP.profiles(ids);ids.forEach(id=>NOMES_U.set(id,(ps[id]&&ps[id].name)||'Alguém'));}catch(e){}}
+      if(!feito){feito=true;clearTimeout(t);res(lista);}else{CARGAS=lista;afterData(null);}
+    },e=>{if(!feito){feito=true;clearTimeout(t);res([]);}statusDb('off','Erro ao ler a base compartilhada ('+e.code+')');});});
+}
+async function idbAll(){if(!SDB)return locAll();return await primeiro;}
+async function idbAdd(c){
+  if(!SDB)return locAdd(c);
+  const id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const body={listas:c.listas,divs:c.divs};const z=await gzipB64(body);const TAM=200000;const partes=Math.ceil(z.length/TAM);
+  try{for(let p=0;p<partes;p++)await SDB.doc(`cargas/${id}/partes/p${p}`).set({z:z.slice(p*TAM,(p+1)*TAM)});
+    SCACHE.set(id,body);c.por=ME;
+    await SDB.doc('cargas/'+id).set({nome:c.nome,quando:c.quando,modo:c.modo||'adicionar',tipo:c.tipo||'',tipos:c.tipos||[],nListas:c.listas.length,nDivs:c.divs.length,partes,por:ME||null,criadoEm:new Date().toISOString()});
+  }catch(e){toast(e&&e.code==='quota_exceeded'?'O espaço da base compartilhada acabou. Exclua cargas antigas.':'Não foi possível gravar na base compartilhada ('+(e&&e.code||'erro')+'). Confira se você tem permissão de edição.');throw e;}
+  return id;}
+async function idbDel(k){if(!SDB)return locDel(k);const m=CARGAS.find(c=>c.key===k);try{await SDB.doc('cargas/'+k).delete();for(let p=0;p<((m&&m.partes)||0);p++)await SDB.doc(`cargas/${k}/partes/p${p}`).delete();}catch(e){toast('Não foi possível excluir ('+(e&&e.code||'erro')+').');}}
+async function idbClear(){if(!SDB)return locClear();for(const c of [...CARGAS])await idbDel(c.key);}
+function salvarMetas(){lsSet('ldm_ir_metas',METAS);if(SDB)SDB.doc('config/metas').set({...METAS}).catch(()=>toast('Metas aplicadas só nesta tela: sem permissão para gravar.'));}
+
+/* ================= ROTATIVO PARCIAL =================
+   Arquivos enviados aqui ficam só na memória desta aba: não entram na base, nem embutida nem compartilhada. */
+const PARC={listas:[],divs:[],arqs:[],dia:null,res:null};
+const SIT={C:{t:'Concluído',cl:'g',cor:[22,163,74]},T:{t:'Falta 3ª contagem',cl:'b',cor:[234,88,12]},A:{t:'Falta aprovar',cl:'b',cor:[245,158,11]},N:{t:'Encerrado com não realizado',cl:'c',cor:[192,0,0]},E:{t:'Em andamento',cl:'b',cor:[245,158,11]},P:{t:'Pendente',cl:'c',cor:[192,0,0]},S:{t:'Sem lista no dia',cl:'',cor:[148,163,184]}};
+const SIT_ORD={P:0,E:1,T:2,A:3,N:4,C:5,S:6};
+function parcDias(){const s=new Set();PARC.listas.forEach(r=>s.add(dkey(r.t)));return [...s].sort((a,b)=>b-a);}
+function parcCalc(){
+  PARC.res=null;if(!PARC.listas.length||PARC.dia==null)return;
+  /* reaproveita o cálculo oficial do módulo sobre os arquivos parciais, sem tocar na base */
+  const g={L:LISTAS,D:DIVS,C:CORTE,ini:F.ini,fim:F.fim,dist:F.dist,loja:F.loja};let c;
+  try{
+    PARC.divs.forEach((d,i)=>{d.ord=i;d.ref=(d.tdt!=null?d.tdt:d.cdt);d.key=d.tdt!=null?(d.loja+'_'+d.prod+'_'+dkey(d.tdt)):null;});
+    LISTAS=PARC.listas;DIVS=PARC.divs;CORTE=0;PARC.listas.forEach(r=>{if(r.t>CORTE)CORTE=r.t;});
+    F.ini=PARC.dia;F.fim=PARC.dia;F.dist='';F.loja='';
+    c=compute();
+  }finally{LISTAS=g.L;DIVS=g.D;CORTE=g.C;F.ini=g.ini;F.fim=g.fim;F.dist=g.dist;F.loja=g.loja;}
+  /* etapa da divergência na parcial (regra do Éder):
+     sem 3ª contagem = falta realizar a 3ª contagem; com 3ª contagem e status PENDING = falta aprovar;
+     com 3ª contagem e qualquer outro status (aprovada, reprovada) = realizado.
+     SHUT_DOWN segue a regra do painel: só é realizado se tiver 3ª contagem igual ao sistema. */
+  c.rows.forEach(r=>{r.pend='';if(r.si!=='RCD')return;const d=r.div;
+    if(!d){if(r.sf==='EAP')r.pend='T';}
+    else if(d.st==='SHUT_DOWN'){/* já classificado */}
+    else if(d.tc==null)r.pend='T';
+    else if(d.st==='PENDING'||d.st==='WAITING_APPROVAL')r.pend='A';
+    if(r.pend){r.sf='EAP';r.est=0;r.dv=0;r.vest=0;r.vdv=0;r.vfal=0;r.vsob=0;}});
+  const por=new Map();c.rows.forEach(r=>{if(!por.has(r.loja))por.set(r.loja,[]);por.get(r.loja).push(r);});
+  const mk=(n,rs)=>{const a=agg(rs);a.num=n;a.nome=lojaNome(n);a.dist=lojaDist(n);
+    a.f3=rs.filter(r=>r.pend==='T').length;a.fa=rs.filter(r=>r.pend==='A').length;
+    a.cont=a.tot-a.NRO;a.falta=a.NRO;a.feito=a.tot-a.NRO-a.NRG-a.EAP;a.realP=a.tot>0?a.feito/a.tot:null;
+    a.sit=a.tot===0?'S':a.cont===0?'P':a.falta>0?'E':a.f3>0?'T':a.fa>0?'A':a.NRG>0?'N':'C';return a;};
+  const lojas=[...por.entries()].map(([n,rs])=>mk(n,rs));
+  lojas.sort((x,y)=>(SIT_ORD[x.sit]-SIT_ORD[y.sit])||((x.realP??2)-(y.realP??2))||x.nome.localeCompare(y.nome));
+  const rede=agg(c.rows);rede.cont=rede.tot-rede.NRO;rede.feito=rede.tot-rede.NRO-rede.NRG-rede.EAP;rede.realP=rede.tot>0?rede.feito/rede.tot:null;
+  let ult=0;c.rows.forEach(r=>{if(r.si!=='NRO'&&r.t>ult)ult=r.t;});
+  const n=k=>lojas.filter(l=>l.sit===k).length;
+  PARC.res={lojas,rede,ult,nC:n('C'),nN:n('N'),nT:n('T'),nA:n('A'),nE:n('E'),nP:n('P'),nS:n('S'),geradoEm:agora()};
+}
+async function parcFiles(files){
+  if(!files.length)return;const res=$('#pcRes');res.innerHTML='<p class="note">Lendo '+files.length+' arquivo(s)…</p>';const msgs=[];
+  for(const f of files){
+    try{const p=await lerArquivo(f);
+      if(!p.listas.length&&!p.divs.length){msgs.push(`<p class="res-err">${esc(f.name)}: ${SEM_COLUNAS}</p>`);continue;}
+      const mL=new Map(PARC.listas.map(r=>[r.id,r]));p.listas.forEach(r=>mL.set(r.id,r));PARC.listas=[...mL.values()];
+      const mD=new Map(PARC.divs.map(r=>[r.id,r]));p.divs.forEach(r=>mD.set(r.id,r));PARC.divs=[...mD.values()];
+      PARC.arqs.push(f.name);
+      msgs.push(`<p class="res-ok">${esc(f.name)}: ${[p.listas.length?fN(p.listas.length)+' itens de listas':'',p.divs.length?fN(p.divs.length)+' divergências':''].filter(Boolean).join(' e ')}. Usado só nesta parcial, não entrou na base.</p>`);
+    }catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: não foi possível ler o arquivo (${esc(e.message)}).</p>`);}
+  }
+  if(PARC.listas.length){const ds=parcDias();if(PARC.dia==null||!ds.includes(PARC.dia))PARC.dia=ds[0];}
+  else if(PARC.divs.length)msgs.push('<p class="res-warn">Falta o arquivo de Listas de Contagem: é ele que diz o que cada loja tinha para contar.</p>');
+  if(PARC.listas.length&&!PARC.divs.length)msgs.push('<p class="res-warn">Sem o arquivo de Divergências, os itens com diferença aparecem como “falta aprovar” e a acuracidade fica incompleta.</p>');
+  res.innerHTML=msgs.join('');parcCalc();renderParcial();
+}
+function renderParcial(){
+  const r=PARC.res,tem=!!r;
+  $('#pcVazio').hidden=tem;$('#pcCorpo').hidden=!tem;$('#pcPdf').disabled=!tem;$('#pcLimpar').disabled=!PARC.arqs.length;
+  const sel=$('#pcDia'),ds=parcDias();sel.innerHTML=ds.map(d=>`<option value="${d}"${d===PARC.dia?' selected':''}>${fD(d)}</option>`).join('');sel.disabled=ds.length<2;
+  if(!tem)return;
+  const im=(k,v)=>`<div><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#pcKpis').innerHTML=im('Lojas concluídas',fN(r.nC))+im('Falta 3ª contagem',fN(r.nT))+im('Falta aprovar',fN(r.nA))+im('Em andamento',fN(r.nE))+im('Pendentes (nada contado)',fN(r.nP))+im('Encerradas com não realizado',fN(r.nN))+
+    im('Realizado da rede',fP(r.rede.realP)+' <small>'+fN(r.rede.feito)+' de '+fN(r.rede.tot)+' itens</small>')+im('Acuracidade Qtd (prévia)',fP(r.rede.qtd,2))+im('Acuracidade SKU (prévia)',fP(r.rede.sku,2))+im('Última contagem recebida',r.ult?fDH(r.ult):'—');
+  const cols=[{k:'dist',t:'Distrito'},{k:'num',t:'Núm.',n:1},{k:'nome',t:'Loja',f:l=>'<b>'+esc(l.nome)+'</b>'},
+    {k:'tot',t:'Itens',n:1},{k:'cont',t:'Contados',n:1},{k:'falta',t:'Falta contar',n:1,cl:l=>l.falta>0?'bad':''},{k:'f3',t:'Falta 3ª cont.',n:1,tip:'Itens com diferença ainda sem 3ª contagem',cl:l=>l.f3>0?'mid':''},{k:'fa',t:'Falta aprovar',n:1,tip:'Itens com 3ª contagem feita e divergência aguardando aprovação (WAITING_APPROVAL ou PENDING)',cl:l=>l.fa>0?'mid':''},{k:'NRG',t:'Não realizado',n:1,tip:'Divergência SHUT_DOWN sem 3ª contagem ou com 3ª contagem diferente do sistema',cl:l=>l.NRG>0?'bad':''},
+    {k:'realP',t:'Realizado',n:1,f:l=>fP(l.realP),x:l=>l.realP},{k:'qtd',t:'Acur. Qtd',n:1,f:l=>fP(l.qtd),x:l=>l.qtd},{k:'sku',t:'Acur. SKU',n:1,f:l=>fP(l.sku),x:l=>l.sku},
+    {k:'sit',t:'Situação',f:l=>SIT[l.sit].cl?`<span class="cls ${SIT[l.sit].cl}">${SIT[l.sit].t}</span>`:SIT[l.sit].t,x:l=>SIT[l.sit].t,sv:l=>SIT_ORD[l.sit]}];
+  table('#pcTb',cols,r.lojas,{});
+  $('#pcNota').innerHTML=`Parcial de <b>${fD(PARC.dia)}</b>, gerada em ${fDH(r.geradoEm)} com ${esc(PARC.arqs.join(', '))}. Realizado = itens concluídos ÷ itens enviados na lista do dia; item com diferença só conta como concluído depois da 3ª contagem aprovada ou reprovada. Sem 3ª contagem = falta a 3ª contagem; com 3ª contagem e divergência aguardando aprovação (WAITING_APPROVAL ou PENDING) = falta aprovar. As acuracidades são prévias: só consideram itens já concluídos. Estes arquivos <b>não entram na base</b> e somem ao recarregar a página; o dia fechado continua entrando por “Atualizar dados”.`;
+}
+function parcPdf(){
+  const r=PARC.res;if(!r)return;
+  if(!window.jspdf||!window.jspdf.jsPDF){toast('Não consegui carregar o gerador de PDF. Recarregue a página e tente de novo.');return;}
+  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});const W=210,AZ=[0,26,114],LA=[254,80,0];
+  const pc=(v,d=1)=>(v==null||!isFinite(v))?'-':(v*100).toFixed(d).replace('.',',')+'%';
+  const T=(s,x,y,o)=>doc.text(String(s),x,y,o||{});
+  /* cabeçalho */
+  doc.setFillColor(...LA);doc.circle(22,19,9,'F');doc.setFillColor(...AZ);doc.circle(22,19,6.2,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(5.2);T('PREVENÇÃO',22,18.4,{align:'center'});T('DE PERDAS',22,20.8,{align:'center'});
+  doc.setTextColor(...AZ);doc.setFontSize(19);T('Inventário Rotativo',W/2,16,{align:'center'});
+  doc.setFontSize(12.5);T('LDM - Parcial de '+fD(PARC.dia),W/2,23,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90,100,120);T('Posição gerada em '+fDH(r.geradoEm)+(r.ult?'  |  última contagem recebida: '+fDH(r.ult):''),W/2,28.5,{align:'center'});
+  doc.setTextColor(...LA);doc.setFont('helvetica','bold');doc.setFontSize(12);T('Loja do Mecânico',W-12,18,{align:'right'});
+  doc.setFontSize(7.5);doc.setTextColor(...AZ);T('Lugar de quem faz',W-12,22.5,{align:'right'});
+  /* cartões */
+  const cards=[['Realizado',pc(r.rede.realP),'itens concluídos / enviados',LA,LA],['Acuracidade Qtd.',pc(r.rede.qtd,2),'prévia: peças com diferença / estoque',[150,150,150],[20,20,20]],
+    ['Acuracidade SKUs',pc(r.rede.sku,2),'prévia: itens com diferença / contados',[150,150,150],[20,20,20]],['Lojas CONCLUÍDAS',String(r.nC),'tudo contado, sem pendência'+(r.nN?' | '+r.nN+' encerrada(s) com não realizado':''),[22,163,74],[22,163,74]],
+    ['Lojas PENDENTES',String(r.nP+r.nE+r.nT+r.nA),r.nP+' sem contar | '+r.nE+' em andamento | '+r.nT+' falta 3ª cont. | '+r.nA+' falta aprovar',[220,0,0],[220,0,0]]];
+  const cw=34,gap=(W-24-cw*5)/4;let y=35;
+  cards.forEach((c,i)=>{const x=12+i*(cw+gap);doc.setDrawColor(...c[3]);doc.setLineWidth(.6);doc.setFillColor(255,255,255);doc.roundedRect(x,y,cw,26,2.5,2.5,'FD');
+    doc.setFillColor(...c[3]);doc.roundedRect(x,y,cw,7,2.5,2.5,'F');doc.rect(x,y+3.5,cw,3.5,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(8);T(c[0],x+cw/2,y+4.9,{align:'center'});
+    doc.setTextColor(...c[4]);doc.setFontSize(17);T(c[1],x+cw/2,y+16.5,{align:'center'});
+    doc.setTextColor(60,60,60);doc.setFont('helvetica','normal');doc.setFontSize(5.4);T(c[2],x+cw/2,y+22.5,{align:'center',maxWidth:cw-3});});
+  /* tabela */
+  y=68;const col=[['Distrito',12.8,'l'],['Núm.',44,'c'],['Loja',49,'l'],['Itens',80,'c'],['Contados',91,'c'],['A contar',104,'c'],['Falta 3ª',117,'c'],['Aprovar',129.5,'c'],['Realizado',142.5,'c'],['Ac. Qtd',155.5,'c'],['Ac. SKU',167,'c'],['Situação',176,'l']];
+  const rh=5;doc.setFillColor(...AZ);doc.rect(12,y,W-24,6.4,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(7.6);
+  col.forEach(c=>T(c[0],c[1],y+4.4,{align:c[2]==='c'?'center':'left'}));y+=6.4;
+  doc.setFontSize(7.4);
+  r.lojas.forEach((l,i)=>{if(i%2===0){doc.setFillColor(221,230,243);doc.rect(12,y,W-24,rh,'F');}
+    const s=SIT[l.sit],by=y+3.6;doc.setTextColor(20,20,20);doc.setFont('helvetica','normal');
+    T(l.dist,12.8,by);T(l.num,44,by,{align:'center'});doc.setFont('helvetica','bold');T(l.nome,49,by);doc.setFont('helvetica','normal');
+    if(l.sit==='S'){doc.setTextColor(110,120,135);['-','-','-','-','-','-','-','-'].forEach((v,k)=>T(v,col[3+k][1],by,{align:'center'}));}
+    else{T(fN(l.tot),80,by,{align:'center'});T(fN(l.cont),91,by,{align:'center'});
+      const dest=(v,x,cor)=>{if(v>0){doc.setTextColor(...cor);doc.setFont('helvetica','bold');}T(fN(v),x,by,{align:'center'});doc.setTextColor(20,20,20);doc.setFont('helvetica','normal');};
+      dest(l.falta,104,[192,0,0]);dest(l.f3,117,[200,80,0]);dest(l.fa,129.5,[180,110,0]);
+      T(pc(l.realP),142.5,by,{align:'center'});T(pc(l.qtd),155.5,by,{align:'center'});T(pc(l.sku),167,by,{align:'center'});}
+    doc.setFillColor(...s.cor);doc.circle(175.2,y+rh/2,1.1,'F');doc.setTextColor(...(l.sit==='S'?[110,120,135]:[20,20,20]));doc.setFont('helvetica','bold');doc.setFontSize(6.6);
+    T(l.sit==='T'?'Falta 3ª cont.':l.sit==='S'?'Sem lista':l.sit==='N'?'Não realizado':s.t,177.6,by);doc.setFontSize(7.4);y+=rh;});
+  doc.setDrawColor(...AZ);doc.setLineWidth(.4);doc.rect(12,68,W-24,y-68);
+  /* legenda */
+  y+=5;doc.setFontSize(6.8);doc.setFont('helvetica','normal');let lx=12;
+  [['C','Concluído: tudo contado e sem pendência'],['T','Falta 3ª contagem: item com diferença ainda sem a 3ª contagem'],['A','Falta aprovar: 3ª contagem feita, divergência pendente de aprovação'],['E','Em andamento: ainda há itens sem contar'],['P','Pendente: nenhum item contado'],['N','Não realizado: encerrou o dia com divergência cancelada sem 3ª contagem válida']].forEach((g,i)=>{
+    if(i===2||i===3||i===5){lx=12;y+=4.2;}doc.setFillColor(...SIT[g[0]].cor);doc.circle(lx+1.2,y-1,1.2,'F');doc.setTextColor(40,40,40);T(g[1],lx+3.6,y);lx+=doc.getTextWidth(g[1])+9;});
+  /* quem falta */
+  const nomes=k=>r.lojas.filter(l=>l.sit===k).map(l=>l.nome);y+=9;
+  const bloco=(tit,arr,cor)=>{if(!arr.length)return;doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(...cor);T(tit+' ('+arr.length+')',12,y);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.6);doc.setTextColor(30,30,30);const ls=doc.splitTextToSize(arr.join('  |  '),W-24);doc.text(ls,12,y+4.6);y+=4.6+ls.length*4+3.5;};
+  bloco('Ainda não começaram',nomes('P'),[192,0,0]);bloco('Em andamento',nomes('E'),[180,110,0]);bloco('Contaram tudo, falta realizar a 3ª contagem',nomes('T'),[200,80,0]);bloco('Falta aprovar a divergência',nomes('A'),[180,110,0]);bloco('Encerraram com itens não realizados',nomes('N'),[192,0,0]);
+  if(!(r.nP+r.nE+r.nT+r.nA)){doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(22,130,60);T('Todas as lojas com lista no dia concluíram o rotativo.',12,y);y+=8;}
+  /* dicas */
+  const dicas=['Sempre que houver "inversão" (voltagem, cor, modelo...) e o outro item não estiver no Rotativo, solicite o ajuste no Forms para acertar tudo.',
+    'Garanta que os itens estão sendo conferidos no recebimento. Se entrar errado, já saímos perdendo.',
+    'Verifique os itens em grande quantidade em loja (discos, gavetas, chaves): olhe se o corredor está certo e se na hora de bipar também é bipado 1 a 1.',
+    'Veja sempre se há NFs pendentes: uma NF em atraso pode mascarar um saldo em loja e gerar retrabalho, perda e depois ganho.'];
+  if(y>236){doc.addPage();y=20;}else y+=3;
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...LA);T('Como melhorar meu Rotativo?',W/2,y,{align:'center'});
+  const tw=doc.getTextWidth('Como melhorar meu Rotativo?');doc.setDrawColor(...LA);doc.setLineWidth(.4);doc.line(W/2-tw/2,y+1.2,W/2+tw/2,y+1.2);y+=8;
+  doc.setFont('helvetica','normal');doc.setFontSize(8.4);doc.setTextColor(30,30,30);
+  dicas.forEach(d=>{const ls=doc.splitTextToSize(d,W-30);doc.setFillColor(...LA);doc.circle(13.5,y-1.1,.9,'F');doc.text(ls,17,y);y+=ls.length*3.9+2.2;});
+  y+=2;doc.setFont('helvetica','bold');doc.setFontSize(8.8);
+  T('Não PERDEMOS ou GANHAMOS por Rotativo: a perda ou o ganho acontece por alguma razão.',W/2,y,{align:'center'});
+  T('Revisite os processos de tempo em tempo (conferência, faturamento, vendas, trocas).',W/2,y+4.4,{align:'center'});
+  const np=doc.getNumberOfPages();for(let p=1;p<=np;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(6.8);doc.setTextColor(110,120,135);
+    T('Parcial: os números mudam até o fechamento do dia. Prevenção de Perdas - Loja do Mecânico - S.E.N.N.A.',W/2,291,{align:'center'});}
+  const iso=(()=>{const x=dDate(PARC.dia);return x.getUTCFullYear()+'-'+String(x.getUTCMonth()+1).padStart(2,'0')+'-'+String(x.getUTCDate()).padStart(2,'0');})();
+  const hh=(()=>{const x=new Date(r.geradoEm);return String(x.getUTCHours()).padStart(2,'0')+'h'+String(x.getUTCMinutes()).padStart(2,'0');})();
+  const buf=doc.output('arraybuffer');
+  (async()=>{let dl=null;try{dl=window.claude&&await window.claude.use('downloads');}catch(e){}
+    if(!dl){toast('PDF disponível só no painel publicado no claude.ai.');return;}
+    try{await dl.save({filename:'Rotativo_Parcial_'+iso+'_'+hh+'.pdf',data:buf});}catch(e){if(!e||e.code!=='declined')toast('Não foi possível gerar o PDF ('+(e&&e.code||'erro')+').');}})();
+}
+function resumoMensal(){
+  /* uma linha por loja e mês, calculada como o painel calcula quando o período é o mês inteiro */
+  const meses=new Set();LISTAS.forEach(r=>{const x=dDate(dkey(r.t));meses.add(x.getUTCFullYear()*12+x.getUTCMonth());});
+  const g={ini:F.ini,fim:F.fim,dist:F.dist,loja:F.loja};const out=[];
+  try{F.dist='';F.loja='';
+    [...meses].sort((a,b)=>a-b).forEach(k=>{const y=Math.floor(k/12),m=k%12;F.ini=dkey(Date.UTC(y,m,1));F.fim=dkey(Date.UTC(y,m+1,0));
+      const por=new Map();compute().rows.forEach(r=>{if(!por.has(r.loja))por.set(r.loja,[]);por.get(r.loja).push(r);});
+      [...por.entries()].sort((a,b)=>a[0]-b[0]).forEach(([l,rs])=>{const a=agg(rs);
+        out.push({'Mês':y+'-'+String(m+1).padStart(2,'0'),'Loja (núm.)':l,'Loja':lojaNome(l),'Itens enviados':a.tot,'Itens realizados':a.RSD+a.RCD,'Itens com divergência':a.RCD,
+          'Peças no sistema':a.est,'Peças divergentes':a.dv,'Não realizados':a.NRO+a.NRG,'Em aprovação':a.EAP,'Acur. Qtd':a.qtd,'Acur. SKU':a.sku,'Realizado':a.real});});});
+  }finally{F.ini=g.ini;F.fim=g.fim;F.dist=g.dist;F.loja=g.loja;}
+  return out;
+}
+function exportarResumoMensal(){
+  const L=resumoMensal();if(!L.length){toast('A base está vazia: não há resumo para exportar.');return;}
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(L);ws['!cols']=[9,11,22,14,15,19,16,17,15,13,10,10,10].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws,'Resumo_Rotativo_Mensal');
+  const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});const x=new Date(agora());
+  const nome='SENNA_Resumo_Rotativo_Mensal_'+x.getUTCFullYear()+String(x.getUTCMonth()+1).padStart(2,'0')+String(x.getUTCDate()).padStart(2,'0')+'.xlsx';
+  (async()=>{let dl=null;try{dl=window.claude&&await window.claude.use('downloads');}catch(e){}
+    if(!dl){toast('Exportação disponível só no painel publicado no claude.ai.');return;}
+    try{await dl.save({filename:nome,data:buf});}catch(e){if(!e||e.code!=='declined')toast('Não foi possível exportar ('+(e&&e.code||'erro')+').');}})();
+}
+function setupParcial(){
+  $('#btnResumoMes').onclick=()=>{try{exportarResumoMensal();}catch(e){toast('Não foi possível exportar: '+e.message);}};
+  $('#pcBtn').onclick=()=>$('#pcFile').click();
+  $('#pcFile').onchange=e=>{parcFiles([...e.target.files]);e.target.value='';};
+  const dz=$('#pcDrop');
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
+  dz.addEventListener('drop',e=>parcFiles([...e.dataTransfer.files]));
+  $('#pcDia').onchange=e=>{PARC.dia=+e.target.value;parcCalc();renderParcial();};
+  $('#pcPdf').onclick=()=>{try{parcCalc();renderParcial();parcPdf();}catch(e){toast('Não foi possível gerar o PDF: '+e.message);}};
+  $('#pcLimpar').onclick=()=>{PARC.listas=[];PARC.divs=[];PARC.arqs=[];PARC.dia=null;PARC.res=null;$('#pcRes').innerHTML='';renderParcial();toast('Parcial descartada. A base não foi alterada.');};
+}
+
+/* ================= GERAR LDM ROTATIVO =================
+   Recebe as extrações cruas, deixa retirar loja + dia (ex.: queda de energia) e devolve um arquivo no formato LDM Rotativo.
+   Nada aqui entra na base: o arquivo gerado é que deve ser enviado em "Atualizar dados". */
+const GER={listas:[],divs:[],arqs:[],excl:new Map(),grade:null};
+const gKey=(l,d)=>l+'|'+d;
+const gDivDia=d=>dkey(d.cdt!=null?d.cdt:d.tdt);
+function gerGrade(){
+  if(GER.grade)return GER.grade;
+  /* mesma régua do painel: o item só conta como realizado se a contagem fechou.
+     Lista PENDING/SHUTDOWN = não realizado; lista com divergência cuja divergência está SHUT_DOWN sem 3ª contagem = não realizado;
+     divergência ainda sem registro e recente (até 4 dias antes de hoje) = em aprovação, fica fora da conta; mais antiga que isso = não realizado. */
+  const m=new Map(),porDia=new Map(),lojas=new Set();
+  GER.listas.forEach(r=>{const d=dkey(r.t);lojas.add(r.loja);if(!porDia.has(d))porDia.set(d,[]);porDia.get(d).push(r);});
+  const g={L:LISTAS,D:DIVS,C:CORTE,ini:F.ini,fim:F.fim,dist:F.dist,loja:F.loja};
+  try{
+    GER.divs.forEach((d,i)=>{d.ord=i;d.ref=(d.tdt!=null?d.tdt:d.cdt);d.key=d.tdt!=null?(d.loja+'_'+d.prod+'_'+dkey(d.tdt)):null;});
+    DIVS=GER.divs;CORTE=agora();GER.listas.forEach(r=>{if(r.t>CORTE)CORTE=r.t;});F.dist='';F.loja='';
+    porDia.forEach((rows,d)=>{LISTAS=rows;F.ini=d;F.fim=d;
+      compute().rows.forEach(r=>{const k=gKey(r.loja,d);if(!m.has(k))m.set(k,{loja:r.loja,dia:d,tot:0,RSD:0,RCD:0,NRO:0,NRG:0,EAP:0});const c=m.get(k);c.tot++;c[r.sf]++;});});
+  }finally{LISTAS=g.L;DIVS=g.D;CORTE=g.C;F.ini=g.ini;F.fim=g.fim;F.dist=g.dist;F.loja=g.loja;}
+  m.forEach(c=>{const base=c.tot-c.EAP;c.nr=c.NRO+c.NRG;c.real=base>0?1-c.nr/base:null;});
+  GER.grade={m,dias:[...porDia.keys()].sort((a,b)=>a-b),lojas:[...lojas].sort((a,b)=>lojaNome(a).localeCompare(lojaNome(b)))};
+  return GER.grade;
+}
+async function gerFiles(files){
+  if(!files.length)return;const res=$('#grRes');res.innerHTML='<p class="note">Lendo '+files.length+' arquivo(s)…</p>';const msgs=[];
+  for(const f of files){
+    try{const p=await lerArquivo(f);
+      if(!p.listas.length&&!p.divs.length){msgs.push(`<p class="res-err">${esc(f.name)}: ${SEM_COLUNAS}</p>`);continue;}
+      const mL=new Map(GER.listas.map(r=>[r.id,r]));p.listas.forEach(r=>mL.set(r.id,r));GER.listas=[...mL.values()].sort((a,b)=>a.id-b.id);
+      const mD=new Map(GER.divs.map(r=>[r.id,r]));p.divs.forEach(r=>mD.set(r.id,r));GER.divs=[...mD.values()].sort((a,b)=>a.id-b.id);
+      GER.arqs.push(f.name);GER.grade=null;
+      msgs.push(`<p class="res-ok">${esc(f.name)}: ${[p.listas.length?fN(p.listas.length)+' itens de listas':'',p.divs.length?fN(p.divs.length)+' divergências':''].filter(Boolean).join(' e ')}. Não entrou na base.</p>`);
+    }catch(e){msgs.push(`<p class="res-err">${esc(f.name)}: não foi possível ler o arquivo (${esc(e.message)}).</p>`);}
+  }
+  if(GER.divs.length&&!GER.listas.length)msgs.push('<p class="res-warn">Falta o arquivo de Listas de Contagem.</p>');
+  if(GER.listas.length&&!GER.divs.length)msgs.push('<p class="res-warn">Sem o arquivo de Divergências, a aba Dados_Divergencias sai vazia.</p>');
+  res.innerHTML=msgs.join('');renderGerador();
+}
+function gerResumo(){
+  let itRet=0,dvRet=0;const ex=GER.excl;
+  GER.listas.forEach(r=>{if(ex.has(gKey(r.loja,dkey(r.t))))itRet++;});
+  GER.divs.forEach(d=>{if(ex.has(gKey(d.loja,gDivDia(d))))dvRet++;});
+  return {itRet,dvRet};
+}
+function renderGerador(){
+  const tem=GER.listas.length>0;
+  $('#grVazio').hidden=tem;$('#grCorpo').hidden=!tem;$('#grGerar').disabled=!(tem||GER.divs.length);$('#grLimpar').disabled=!GER.arqs.length;
+  if(!tem)return;
+  const g=gerGrade(),s=gerResumo();
+  let h='<thead><tr><th style="position:sticky;left:0;z-index:2;">Loja</th>'+g.dias.map(d=>`<th class="n" title="${fD(d)}">${fDs(d)}</th>`).join('')+'</tr></thead><tbody>';
+  h+=g.lojas.map(l=>`<tr><td style="position:sticky;left:0;background:var(--surface);white-space:nowrap;"><b>${esc(lojaNome(l))}</b></td>`+g.dias.map(d=>{const c=g.m.get(gKey(l,d));
+    if(!c)return '<td class="n" style="color:var(--muted);">·</td>';
+    const fora=GER.excl.has(gKey(l,d));const cl=fora?'gr-x':c.real==null?'gr-mid':c.real>=.95?'gr-ok':c.real>=.9?'gr-mid':'gr-bad';
+    const det=`${fN(c.tot)} itens: ${fN(c.RSD)} sem divergência, ${fN(c.RCD)} com divergência fechada, ${fN(c.NRO)} não contados, ${fN(c.NRG)} com divergência não realizada (shut down ou sem 3ª contagem), ${fN(c.EAP)} em aprovação`;
+    return `<td class="n" style="padding:2px;"><button class="gr-c ${cl}" data-l="${l}" data-d="${d}" title="${esc(lojaNome(l))} · ${fD(d)}: ${det}${fora?' · RETIRADA do arquivo ('+esc(GER.excl.get(gKey(l,d))||'sem motivo')+')':''}. Clique para ${fora?'devolver':'retirar'}.">${fora?'retirada':c.real==null?'apr.':(Math.floor(c.real*1000)/10).toFixed(1).replace('.',',')+'%'}</button></td>`;}).join('')+'</tr>').join('');
+  $('#grTb').innerHTML=h+'</tbody>';
+  const ex=[...GER.excl.entries()].map(([k,mot])=>{const [l,d]=k.split('|').map(Number);return {l,d,mot};}).sort((a,b)=>a.d-b.d||lojaNome(a.l).localeCompare(lojaNome(b.l)));
+  $('#grLista').innerHTML=ex.length?'<b>Retiradas ('+ex.length+'):</b> '+ex.map(e=>`${esc(lojaNome(e.l))} em ${fD(e.d)}${e.mot?' ('+esc(e.mot)+')':''}`).join(' · '):'Nenhuma loja retirada. Clique numa célula para retirar a loja daquele dia.';
+  $('#grNota').innerHTML=`Lidos ${fN(GER.listas.length)} itens de listas e ${fN(GER.divs.length)} divergências de ${esc(GER.arqs.join(', '))}. O arquivo vai sair com <b>${fN(GER.listas.length-s.itRet)}</b> itens e <b>${fN(GER.divs.length-s.dvRet)}</b> divergências (${fN(s.itRet)} itens e ${fN(s.dvRet)} divergências retirados). Cada célula mostra o realizado do dia pela mesma régua do painel: 1 − não realizados ÷ (itens − em aprovação). Não realizado é o item não contado ou o item cuja divergência ficou SHUT_DOWN sem 3ª contagem; “apr.” indica que tudo ainda está em aprovação. Passe o mouse na célula para ver a abertura. A divergência sai junto com a loja quando foi aberta no dia retirado.`;
+}
+function gerXlsx(){
+  const ex=GER.excl;const L=GER.listas.filter(r=>!ex.has(gKey(r.loja,dkey(r.t)))),D=GER.divs.filter(d=>!ex.has(gKey(d.loja,gDivDia(d))));
+  if(!L.length&&!D.length){toast('Não sobrou nenhum registro para gerar.');return;}
+  const dt=t=>t==null?null:{t:'n',v:t/DAY+25569,z:'dd/mm/yyyy hh:mm:ss'};
+  const aL=[['Loja','ID','Bseller','Product Description','Category','Coluna6','Status','Quantity','Bseller Stock','Updated Date','Coluna1']]
+    .concat(L.map(r=>[r.loja,r.id,r.prod,r.desc,r.cat,r.sub,r.st,r.q,r.bs,dt(r.t),r.user]));
+  const aD=[['10','Branch ID','Product ID','Product Description','Status','Third Count Bseller Stock','Third Count','Count Date','4','Third Owner Name','2','First Owner Name','First Count','Second Count','Observation']]
+    .concat(D.map(d=>[d.id,d.loja,d.prod,d.desc,d.st,d.tbs,d.tc,dt(d.tdt),dt(d.cdt),d.gestor,d.lider,d.cont1,d.f1,d.f2,d.obs||'']));
+  const g=gerGrade();
+  const aR=[['Loja (núm.)','Loja (nome)','Dia retirado','Itens retirados','Divergências retiradas','Motivo']]
+    .concat([...ex.entries()].map(([k,mot])=>{const [l,d]=k.split('|').map(Number);return [l,lojaNome(l),{t:'n',v:d+25569,z:'dd/mm/yyyy'},GER.listas.filter(r=>r.loja===l&&dkey(r.t)===d).length,GER.divs.filter(x=>x.loja===l&&gDivDia(x)===d).length,mot||''];}));
+  const wb=XLSX.utils.book_new();
+  const wsL=XLSX.utils.aoa_to_sheet(aL);wsL['!cols']=[8,10,10,48,22,22,26,9,12,19,22].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,wsL,'Listas_Contagem');
+  const wsD=XLSX.utils.aoa_to_sheet(aD);wsD['!cols']=[10,9,10,48,24,12,10,19,19,24,24,24,10,10,60].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,wsD,'Dados_Divergencias');
+  const wsR=XLSX.utils.aoa_to_sheet(aR);wsR['!cols']=[10,22,12,14,20,40].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,wsR,'Retiradas');
+  const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+  const iso=d=>{const x=dDate(d);return x.getUTCFullYear()+String(x.getUTCMonth()+1).padStart(2,'0')+String(x.getUTCDate()).padStart(2,'0');};
+  const nome='LDM_Rotativo_'+(g.dias.length?iso(g.dias[0])+(g.dias.length>1?'_a_'+iso(g.dias[g.dias.length-1]):''):'divergencias')+'.xlsx';
+  (async()=>{let dl=null;try{dl=window.claude&&await window.claude.use('downloads');}catch(e){}
+    if(!dl){toast('Geração disponível só no painel publicado no claude.ai.');return;}
+    try{await dl.save({filename:nome,data:buf});}catch(e){if(!e||e.code!=='declined')toast('Não foi possível gerar o arquivo ('+(e&&e.code||'erro')+').');}})();
+}
+function setupGerador(){
+  $('#grBtn').onclick=()=>$('#grFile').click();
+  $('#grFile').onchange=e=>{gerFiles([...e.target.files]);e.target.value='';};
+  const dz=$('#grDrop');
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
+  dz.addEventListener('drop',e=>gerFiles([...e.dataTransfer.files]));
+  $('#grTb').addEventListener('click',e=>{const b=e.target.closest('.gr-c');if(!b)return;const k=gKey(+b.dataset.l,+b.dataset.d);
+    if(GER.excl.has(k))GER.excl.delete(k);else GER.excl.set(k,$('#grMotivo').value.trim());renderGerador();});
+  $('#grGerar').onclick=()=>{try{gerXlsx();}catch(e){toast('Não foi possível gerar o arquivo: '+e.message);}};
+  $('#grLimpar').onclick=()=>{GER.listas=[];GER.divs=[];GER.arqs=[];GER.excl=new Map();GER.grade=null;$('#grRes').innerHTML='';renderGerador();toast('Arquivos descartados. A base não foi alterada.');};
+}
+
+/* ---------------- navegação ---------------- */
+const PAGES=['painel','diario','itens','pessoas','divergencias','parcial','gerador','dados'];
+const RENDER={painel:renderPainel,diario:renderDiario,itens:renderItens,pessoas:renderPessoas,divergencias:renderDivergencias,parcial:renderParcial,gerador:renderGerador,dados:renderDados};
+function irPara(p){
+  if(!PAGES.includes(p))p='painel';pagina=p;
+  PAGES.forEach(x=>{const s=$('#page-'+x);if(s)s.hidden=x!==p;});
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+  if(R)RENDER[p]();
+  window.scrollTo(0,0);
+}
+function refresh(){recalc();RENDER[pagina]();}
+function ajustarNav(){document.documentElement.style.setProperty('--header-h',$('#hdr').offsetHeight+'px');}
+
+async function init(){
+  ajustarNav();window.addEventListener('resize',ajustarNav);
+  $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b){if(location.hash.slice(1)===b.dataset.page)irPara(b.dataset.page);else location.hash=b.dataset.page;}});
+  window.addEventListener('hashchange',()=>irPara(location.hash.slice(1)));
+  document.addEventListener('click',e=>{if(e.target.matches('[data-close]')||e.target.id==='mdDet')$('#mdDet').hidden=true;});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#mdDet').hidden=true;});
+  chipGroup('#heatModo','m',v=>{heatModo=v;renderDiario();});
+  $('#mdDetExp').onclick=exportModal;
+  chipGroup('#lojaModo','m',v=>{lojaModo=v;renderChLojas();});
+  $('#itBusca').oninput=()=>renderItensTb();
+  $('#dvBusca').oninput=()=>{dvPag=0;renderDivergencias();};$('#dvStatus').onchange=()=>{dvPag=0;renderDivergencias();};
+  try{
+    await carregarCadastro();
+    const B=await gunzipB64(PAYLOAD||(PAYLOAD=await SENNA.embutido('rotativo-payload')));
+    const dec=decodeBase(B);BASE={L:dec.L,D:dec.D,qual:B.qual};
+  }catch(e){$('#loading').textContent='Não foi possível abrir a base embutida: '+e.message+'. Use um navegador atualizado (Chrome, Edge, Firefox ou Safari).';return;}
+  METAS={...METAS_PADRAO,...lsGet('ldm_ir_metas',{})};
+  await conectarCompartilhada();
+  if(!SDB){const t=$('#txtOndeCargas');if(t)t.textContent='Nesta visualização as cargas ficam só neste navegador.';}
+  CARGAS=await idbAll();
+  rebuild();setupFilters();bindFilters();bindDados();
+  recalc();$('#loading').remove();irPara(location.hash.slice(1)||'painel');pitstopAgendar();
+}
+init();
+</script>
+<script>
+const NOMES_ABA={painel:'Painel',diario:'Evolução diária',itens:'Itens',pessoas:'Pessoas',divergencias:'Divergências',diagnostico:'Diagnóstico',dados:'Atualizar dados'};
+window.chatContexto=()=>{try{return `Aba aberta: ${NOMES_ABA[pagina]||pagina}. Período: ${F.ini!=null?fD(F.ini):'—'} a ${F.fim!=null?fD(F.fim):'—'}. Distrito: ${F.dist||'todos'}. Loja: ${F.loja||'todas'}. Metas: realizado ${METAS.rOk}% (mín. ${METAS.rMin}%), acur. Qtd ${METAS.qOk}% (mín. ${METAS.qMin}%), acur. SKU ${METAS.sOk}% (mín. ${METAS.sMin}%). Contagens até ${$('#hdUltima').textContent}. Cargas: ${CARGAS.length}.`;}catch(e){return '';}};
+window.CHAT_TOOLS=[{name:'ler_aba',description:'Lê os números e textos que o painel mostra numa aba, já com os filtros atuais (período, distrito e loja). Abas: painel, diario, itens, pessoas, divergencias, dados.',
+  inputSchema:{type:'object',properties:{aba:{type:'string',enum:['painel','diario','itens','pessoas','divergencias','dados']}},required:['aba']},
+  execute:({aba})=>{const el=document.getElementById('page-'+aba);if(!el)throw new Error('Aba inexistente');try{if(aba!==pagina&&RENDER[aba])RENDER[aba]();}catch(e){}
+    const txt=new DOMParser().parseFromString('<body>'+el.innerHTML.replace(/<(script|style|canvas)[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]+>/g,' ')+'</body>','text/html').body.textContent;return txt.replace(/\s+/g,' ').trim().slice(0,7000);}}];
+</script>
+
+
+<script>
+/* S.E.N.N.A. · modo piloto (editor) x modo visualização (demais acessos) */
+(async()=>{
+  let editor=false;
+  try{const u=window.claude&&window.claude.use?await window.claude.use('user'):null;editor=u?await u.canEdit():false;}catch(e){editor=false;}
+  const hd=document.getElementById('hdDb');
+  const pill=t=>{if(hd)hd.insertAdjacentHTML('afterend',`<span class="pill" style="margin-left:6px;background:${editor?'rgba(254,80,0,.9)':'rgba(255,255,255,.12)'}">${t}</span>`);};
+  if(editor){pill('Modo piloto · você edita metas e cargas');return;}
+  pill('Modo visualização');
+  document.querySelectorAll('[data-page="dados"]').forEach(b=>b.remove());
+  const sec=document.getElementById('page-dados');
+  if(sec){[...sec.children].forEach(c=>c.style.display='none');sec.insertAdjacentHTML('afterbegin','<div class="panel" style="margin-top:12px"><b>Área restrita.</b> A atualização de arquivos e metas é feita pela Prevenção de Perdas. Os números deste painel já mostram a última carga.</div>');}
+  if(location.hash==='#dados')location.hash='painel';
+})();
+</script>
+</body>
+</html>

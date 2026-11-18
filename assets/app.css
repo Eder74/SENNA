@@ -1,0 +1,38 @@
+/* S.E.N.N.A. · camada visual de app para celular e tablet (vale para todos os módulos) */
+#sx-dock,#sx-sheet{display:none}
+@media (max-width:900px),(display-mode:standalone){
+  html.sx-app body{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px)) !important;-webkit-tap-highlight-color:transparent}
+  html.sx-app #sx-bar{display:none}
+  #sx-dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:2147482500;background:#001A72;border-top:3px solid #FE5000;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-around;font-family:Arial,Helvetica,sans-serif;box-shadow:0 -6px 18px rgba(0,0,0,.18)}
+  #sx-dock a,#sx-dock button{flex:1;max-width:160px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#C9D2F0;text-decoration:none;background:none;border:none;
+    font-size:11px;font-weight:bold;padding:6px 4px;border-radius:10px;cursor:pointer;min-height:52px;justify-content:center}
+  #sx-dock span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #sx-dock .on{color:#fff;background:rgba(255,255,255,.12)}
+  #sx-dock .on svg{color:#FE5000}
+  #sx-sheet:not([hidden]){display:block;position:fixed;left:8px;right:8px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:2147482600;
+    background:#fff;color:#1E293B;border-radius:16px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.35);font-family:Arial,Helvetica,sans-serif;max-height:70vh;overflow:auto}
+  #sx-sheet .sx-h{font-weight:bold;color:#001A72;font-size:15px;margin:2px 4px 8px}
+  #sx-sheet .sx-sub{font-size:12px;color:#64748B;margin:-4px 4px 10px}
+  #sx-sheet .sx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  #sx-sheet .sx-grid a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:12px 6px;min-height:84px;
+    border:1px solid #E2E8F0;border-radius:12px;color:#001A72;text-decoration:none;font-size:12px;font-weight:bold;line-height:1.25}
+  #sx-sheet .sx-grid a svg{color:#FE5000}
+  #sx-sheet .sx-grid a.on{background:#001A72;color:#fff;border-color:#001A72}
+  #sx-sheet .sx-list{display:flex;flex-direction:column;gap:8px}
+  #sx-sheet .sx-list a,#sx-sheet .sx-list button{display:block;text-align:left;padding:13px 14px;border:1px solid #E2E8F0;border-radius:10px;background:#fff;color:#001A72;
+    font-weight:bold;font-size:14px;text-decoration:none;cursor:pointer}
+  #sx-sheet .sx-list .sx-sair{color:#C00000}
+  #sx-sheet .sx-dica{font-size:12.5px;color:#64748B;padding:4px}
+  /* toque: alvos maiores e campos sem zoom automático no iPhone */
+  html.sx-app input,html.sx-app select,html.sx-app textarea{font-size:16px !important}
+  html.sx-app button,html.sx-app .btn,html.sx-app select,html.sx-app .chip{min-height:40px}
+  html.sx-app header p{display:none}
+  html.sx-app .scroll,html.sx-app .tbl-wrap{-webkit-overflow-scrolling:touch}
+  html.sx-app #toast{bottom:calc(84px + env(safe-area-inset-bottom,0px)) !important}
+}
+@media (prefers-color-scheme:dark){
+  #sx-sheet:not([hidden]){background:#141B30;color:#E5E9F2}
+  #sx-sheet .sx-h{color:#AFC2FF}
+  #sx-sheet .sx-grid a,#sx-sheet .sx-list a,#sx-sheet .sx-list button{border-color:#2A3453;color:#E5E9F2;background:#141B30}
+}
